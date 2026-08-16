@@ -50,6 +50,13 @@ class SlaveRepository(private val slaveDao:SlaveDao) : IOScopedObject() {
         }
     }
 
+    suspend fun saveSlaves(mediaPath: String, slaves: Array<IMedia.Slave>) {
+        if (slaves.isEmpty()) return
+        withContext(Dispatchers.IO) {
+            slaveDao.insert(slaves.map { Slave(mediaPath, it.type, it.priority, it.uri) }.toTypedArray())
+        }
+    }
+
     suspend fun getSlaves(mrl: String): List<IMedia.Slave> {
         return withContext(Dispatchers.IO) {
             val slaves = try {

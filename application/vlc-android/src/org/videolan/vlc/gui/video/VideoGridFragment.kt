@@ -762,17 +762,7 @@ class VideoGridFragment : MediaBrowserFragment<VideosViewModel>(), SwipeRefreshL
                     multiSelectHelper.toggleSelection(position)
                     invalidateActionMode()
                 } else {
-                    val castAsAudio = castAsAudio()
-                    if (castAsAudio) {
-                        item.addFlags(MediaWrapper.MEDIA_FORCE_AUDIO)
-                        PlaylistManager.playingAsAudio = true
-                    }
-                    when(DefaultPlaybackActionMediaType.VIDEO.getCurrentPlaybackAction(settings)) {
-                        DefaultPlaybackAction.PLAY -> viewModel.playVideo(activity, item, position, forceAudio = castAsAudio)
-                        DefaultPlaybackAction.ADD_TO_QUEUE -> MediaUtils.appendMedia(activity, item)
-                        DefaultPlaybackAction.INSERT_NEXT -> MediaUtils.insertNext(activity, item)
-                        else  -> viewModel.playVideo(activity, item, position, forceAll = true, forceAudio = castAsAudio)
-                    }
+                    MediaUtils.openMedia(requireContext(), item)
                 }
             }
             is Folder -> {

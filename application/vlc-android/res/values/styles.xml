@@ -186,6 +186,19 @@
         <item name="gridview_progressbar">@drawable/gridview_progressbar</item>
     </style>
 
+    <style name="Theme.VLC.XrSubtitlePickerDialog" parent="Theme.VLC.PickerDialog">
+        <item name="android:background">@android:color/transparent</item>
+        <item name="background">@android:color/transparent</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:colorBackgroundCacheHint">@android:color/transparent</item>
+        <item name="android:windowContentOverlay">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowIsFloating">true</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
     <style name="Theme.VLC.SendCrashDialog" parent="Theme.MaterialComponents.Dialog">
         <item name="windowNoTitle">true</item>
         <item name="colorPrimary">@color/orange800</item>
@@ -490,6 +503,10 @@
         <item name="android:windowTranslucentStatus">true</item>
         <item name="android:backgroundDimEnabled">false</item>
     </style>
+
+    <style name="Theme.VLC.Start.Transparent.NoUI" parent="Theme.VLC.Transparent.NoUI" />
+
+    <style name="Theme.VLC.Main" parent="Theme.VLC" />
 
     <style name="Theme.VLC.Player" parent="Theme.VLC.Player.7" />
 

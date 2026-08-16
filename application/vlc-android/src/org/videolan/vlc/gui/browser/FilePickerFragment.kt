@@ -37,6 +37,7 @@ import org.videolan.medialibrary.MLServiceLocator
 import org.videolan.medialibrary.interfaces.media.MediaWrapper
 import org.videolan.medialibrary.media.MediaLibraryItem
 import org.videolan.resources.AndroidDevices
+import org.videolan.resources.KEY_MRL
 import org.videolan.resources.util.parcelable
 import org.videolan.tools.removeFileScheme
 import org.videolan.vlc.R
@@ -60,17 +61,38 @@ class FilePickerFragment : FileBrowserFragment(), BrowserContainer<MediaLibraryI
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        requireActivity().intent?.parcelable<MediaWrapper>(KEY_MEDIA)?.let { media ->
-            if (media.uri == null || media.uri.scheme == "http" || media.uri.scheme == "content" || media.uri.scheme == "fd") {
-                activity?.intent = null
-            }
-        }
-        requireActivity().intent?.getIntExtra(KEY_PICKER_TYPE, 0)?.let { pickerIndex ->
-            pickerType = PickerType.entries.toTypedArray()[pickerIndex]
-        } ?: PickerType.SUBTITLE
+        pickerType = resolvePickerType()
+        applySubtitleFallbackToInternalStorage()
         super.onCreate(savedInstanceState)
         adapter = FilePickerAdapter(this)
     }
+
+    private fun resolvePickerType(): PickerType {
+        val pickerIndex = requireActivity().intent?.getIntExtra(KEY_PICKER_TYPE, 0)
+            ?: arguments?.getInt(KEY_PICKER_TYPE, 0)
+            ?: 0
+        return PickerType.entries.toTypedArray().getOrElse(pickerIndex) { PickerType.SUBTITLE }
+    }
+
+    private fun applySubtitleFallbackToInternalStorage() {
+        if (pickerType != PickerType.SUBTITLE) return
+        val bundle = arguments ?: Bundle().also { arguments = it }
+        val media = bundle.parcelable<MediaWrapper>(KEY_MEDIA)
+            ?: requireActivity().intent?.parcelable<MediaWrapper>(KEY_MEDIA)
+        if (!shouldFallbackToInternalStorage(media)) return
+        bundle.remove(KEY_MEDIA)
+        bundle.putString(KEY_MRL, internalStorageMrl())
+    }
+
+    private fun shouldFallbackToInternalStorage(media: MediaWrapper?): Boolean {
+        val scheme = media?.uri?.scheme
+        return media?.uri == null ||
+                scheme == "content" ||
+                scheme == "fd" ||
+                scheme?.startsWith("http") == true
+    }
+
+    private fun internalStorageMrl() = "file://${AndroidDevices.EXTERNAL_PUBLIC_DIRECTORY}"
 
     override fun setupBrowser() {
         viewModel = ViewModelProvider(this, BrowserModel.Factory(requireContext(), mrl, TYPE_PICKER, false, pickerType = pickerType))[BrowserModel::class.java]

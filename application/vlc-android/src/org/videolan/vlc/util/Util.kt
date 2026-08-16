@@ -72,7 +72,7 @@ object Util {
                 runOnMainThread(Runnable {
                     when (ctx) {
                         is Service -> ctx.stopSelf()
-                        is VideoPlayerActivity -> ctx.exit(Activity.RESULT_CANCELED)
+                        is VideoPlayerActivity -> ctx.finish()
                         is Activity -> ctx.finish()
                     }
                 })

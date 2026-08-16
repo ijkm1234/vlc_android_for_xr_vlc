@@ -74,7 +74,8 @@ import org.videolan.tools.getContextWithLocale
 import org.videolan.tools.putSingle
 import org.videolan.vlc.gui.BetaWelcomeActivity
 import org.videolan.vlc.gui.helpers.hf.StoragePermissionsDelegate.Companion.getStoragePermission
-import org.videolan.vlc.gui.onboarding.ONBOARDING_DONE_KEY
+import org.videolan.vlc.gui.onboarding.CURRENT_XR_ONBOARDING_VERSION
+import org.videolan.vlc.gui.onboarding.XR_ONBOARDING_VERSION_KEY
 import org.videolan.vlc.gui.onboarding.startOnboarding
 import org.videolan.vlc.gui.video.VideoPlayerActivity
 import org.videolan.vlc.media.MediaUtils
@@ -86,6 +87,10 @@ import videolan.org.commontools.TV_CHANNEL_PATH_APP
 import videolan.org.commontools.TV_CHANNEL_PATH_VIDEO
 import videolan.org.commontools.TV_CHANNEL_QUERY_VIDEO_ID
 import videolan.org.commontools.TV_CHANNEL_SCHEME
+
+import org.videolan.libvlc.Dialog
+import org.videolan.vlc.util.DialogDelegate
+import org.videolan.resources.VLCInstance
 
 private const val SEND_CRASH_RESULT = 0
 private const val PROPAGATE_RESULT = 1
@@ -119,7 +124,15 @@ class StartActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // XR_VLC: Ensure Dialog callbacks are registered since Unity bypasses VLCApplication
+        try {
+            Dialog.setCallbacks(VLCInstance.getInstance(this), DialogDelegate)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to set Dialog callbacks", e)
+        }
 
+        /*
         try {
             if (!Settings.showTvUi && BuildConfig.BETA && !Settings.getInstance(this).getBoolean(BETA_WELCOME, false)) {
                 val intent = Intent(this, BetaWelcomeActivity::class.java)
@@ -129,6 +142,7 @@ class StartActivity : FragmentActivity() {
                 return
             }
         } catch (ignored: Exception) {}
+        */
         resume()
     }
 
@@ -275,31 +289,42 @@ class StartActivity : FragmentActivity() {
 
     private fun startApplication(tv: Boolean, firstRun: Boolean, upgrade: Boolean, target: Int, removeDevices:Boolean = false) {
         val settings = Settings.getInstance(this@StartActivity)
-        val onboarding = !settings.getBoolean(if (tv) KEY_TV_ONBOARDING_DONE else ONBOARDING_DONE_KEY, false)
+        val onboarding = if (tv) {
+            firstRun && !settings.getBoolean(KEY_TV_ONBOARDING_DONE, false)
+        } else {
+            settings.getInt(XR_ONBOARDING_VERSION_KEY, 0) < CURRENT_XR_ONBOARDING_VERSION
+        }
+
+        if (onboarding) {
+            if (!tv) {
+                startOnboarding(firstRun, upgrade)
+            } else {
+                startActivity(Intent(Intent.ACTION_VIEW).apply {
+                    setClassName(applicationContext, TV_ONBOARDING_ACTIVITY)
+                })
+            }
+            return
+        }
+
         // Start Medialibrary from background to workaround Dispatchers.Main causing ANR
         // cf https://github.com/Kotlin/kotlinx.coroutines/issues/878
-        if (!onboarding || !firstRun) {
-            Thread {
-                AppScope.launch {
-                    // workaround for a Android 9 bug
-                    // https://issuetracker.google.com/issues/113122354
-                    if (Build.VERSION.SDK_INT == Build.VERSION_CODES.P && !awaitAppIsForegroung()) {
-                        return@launch
-                    }
-                    this@StartActivity.startMedialibrary(firstRun, upgrade, true, removeDevices)
-                    if (onboarding) settings.putSingle(ONBOARDING_DONE_KEY, true)
+        Thread {
+            AppScope.launch {
+                // workaround for a Android 9 bug
+                // https://issuetracker.google.com/issues/113122354
+                if (Build.VERSION.SDK_INT == Build.VERSION_CODES.P && !awaitAppIsForegroung()) {
+                    return@launch
                 }
-            }.start()
-            val mainIntent = Intent(Intent.ACTION_VIEW)
-                    .setClassName(applicationContext, if (tv) TV_MAIN_ACTIVITY else MOBILE_MAIN_ACTIVITY)
-                    .putExtra(EXTRA_FIRST_RUN, firstRun)
-                    .putExtra(EXTRA_UPGRADE, upgrade)
-            if (tv && intent.hasExtra(EXTRA_PATH)) mainIntent.putExtra(EXTRA_PATH, intent.getStringExtra(EXTRA_PATH))
-            if (target != 0) mainIntent.putExtra(EXTRA_TARGET, target)
-            startActivity(mainIntent)
-        } else {
-            if (!tv) startOnboarding() else startActivity(Intent(Intent.ACTION_VIEW).apply { setClassName(applicationContext, TV_ONBOARDING_ACTIVITY) })
-        }
+                this@StartActivity.startMedialibrary(firstRun, upgrade, true, removeDevices)
+            }
+        }.start()
+        val mainIntent = Intent(Intent.ACTION_VIEW)
+                .setClassName(applicationContext, if (tv) TV_MAIN_ACTIVITY else MOBILE_MAIN_ACTIVITY)
+                .putExtra(EXTRA_FIRST_RUN, firstRun)
+                .putExtra(EXTRA_UPGRADE, upgrade)
+        if (tv && intent.hasExtra(EXTRA_PATH)) mainIntent.putExtra(EXTRA_PATH, intent.getStringExtra(EXTRA_PATH))
+        if (target != 0) mainIntent.putExtra(EXTRA_TARGET, target)
+        startActivity(mainIntent)
     }
 
     private fun startPlaybackFromApp(intent: Intent) = lifecycleScope.launch(start = CoroutineStart.UNDISPATCHED) {

@@ -17,7 +17,9 @@
                 android:title="@string/auto_rescan"/>
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="@string/video_prefs_category">
+    <PreferenceCategory
+            android:key="xr_restricted_video_settings"
+            android:title="@string/video_prefs_category">
         <ListPreference
                 android:key="video_action_switch"
                 android:defaultValue="0"
@@ -104,6 +106,10 @@
                 android:key="audio_category"
                 android:icon="@drawable/ic_pref_audio"
                 android:fragment="org.videolan.television.ui.preferences.PreferencesAudio"/>
+        <Preference
+                android:title="@string/xr_controller_shortcuts"
+                android:key="xr_controller_shortcuts"
+                android:icon="@drawable/ic_iconpark_game_two"/>
 
         <Preference
                 android:title="@string/equalizer"
@@ -125,11 +131,6 @@
                 android:key="remote_access_category"
                 android:icon="@drawable/ic_pref_remote_access"
                 android:fragment="org.videolan.television.ui.preferences.PreferencesRemoteAccess"/>
-        <Preference
-            android:title="@string/android_auto"
-            android:key="android_auto_category"
-                android:icon="@drawable/ic_pref_android_auto"
-            android:fragment="org.videolan.television.ui.preferences.PreferencesAndroidAuto"/>
         <Preference
                 android:title="@string/advanced_prefs_category"
                 android:key="adv_category"

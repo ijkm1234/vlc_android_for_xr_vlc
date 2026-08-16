@@ -68,7 +68,7 @@ dependencies {
     api "org.jetbrains.kotlinx:kotlinx-coroutines-android:$rootProject.ext.kotlinx_version"
 
     api project(':application:tools')
-    devApi project(':libvlcjni:libvlc')
+    devApi "org.videolan.android:libvlc-all:$rootProject.ext.libvlcVersion"
     devApi project(':medialibrary')
     debugApi "org.videolan.android:libvlc-all:$rootProject.ext.libvlcVersion"
     debugApi "org.videolan.android:medialibrary-all:$rootProject.ext.medialibraryVersion"

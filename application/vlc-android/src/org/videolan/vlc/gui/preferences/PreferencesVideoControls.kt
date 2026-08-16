@@ -137,4 +137,5 @@ class PreferencesVideoControls : BasePreferenceFragment(), SharedPreferences.OnS
             }
         }
     }
+
 }

@@ -1398,4 +1398,13 @@
     <string name="feedback_email_warning_explanation">分享反馈的最简单方式是使用 %1$s 功能。为此，请在设置中启用远程访问，按照说明操作，然后在菜单中选择 %2$s 选项。</string>
     <string name="feedback_email_warning_remote_action">打开设置</string>
     <string name="feedback_email_warning_try_anyway">仍然尝试</string>
-    </resources>
+    <string name="xr_controller_shortcuts">XR 手柄快捷键</string>
+    <string name="xr_left_stick_click">左摇杆按下</string>
+    <string name="xr_right_stick_click">右摇杆按下</string>
+    <string name="xr_button_y">Y 键</string>
+    <string name="xr_button_b">B 键</string>
+    <string name="xr_action_none">无操作</string>
+    <string name="xr_action_toggle_2x_speed">切换 2 倍速</string>
+    <string name="xr_action_toggle_subtitle">切换字幕</string>
+    <string name="xr_action_reset_screen_transform">重置画面位置</string>
+</resources>

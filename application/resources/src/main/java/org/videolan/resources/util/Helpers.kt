@@ -125,4 +125,3 @@ fun applyOverscanMargin(activity: Activity) {
     val vm = activity.resources.getDimensionPixelSize(R.dimen.tv_overscan_vertical)
     activity.findViewById<View>(android.R.id.content).setPadding(hm, vm, hm, vm)
 }
-

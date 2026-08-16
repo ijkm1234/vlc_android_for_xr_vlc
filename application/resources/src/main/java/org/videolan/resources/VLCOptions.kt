@@ -217,7 +217,7 @@ object VLCOptions {
                 val optionsArray = customOptions.split("\\r?\\n".toRegex()).toTypedArray()
                 if (!optionsArray.isNullOrEmpty()) Collections.addAll(options, *optionsArray)
             }
-            if (pref.getBoolean(KEY_PREFER_SMBV1, true))
+            if (pref.getBoolean(KEY_PREFER_SMBV1, false))
                 options.add("--smb-force-v1")
             if (!Settings.showTvUi) {
                 //Ambisonic

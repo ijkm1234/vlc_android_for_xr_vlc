@@ -370,14 +370,30 @@
                     android:id="@+id/adv_function"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginEnd="4dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="@string/advanced"
                     android:onClick="@{fragment::showAdvancedOptions}"
                     android:padding="8dp"
                     app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintEnd_toStartOf="@+id/collapse_audio_player"
                     app:layout_constraintTop_toTopOf="parent"
                     app:srcCompat="@drawable/ic_overflow_audio" />
+
+            <ImageView
+                    android:id="@+id/collapse_audio_player"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/talkback_audio_player_collapsed"
+                    android:focusable="true"
+                    android:onClick="@{fragment::onCollapsePlayerClick}"
+                    android:padding="8dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:srcCompat="@drawable/ic_iconpark_expand_down_one" />
 
             <TextView
                     android:id="@+id/header_time"

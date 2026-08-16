@@ -59,7 +59,7 @@ import android.widget.Toast
 import androidx.annotation.MainThread
 import androidx.annotation.RequiresApi
 import androidx.annotation.StringRes
-import androidx.car.app.connection.CarConnection
+// import androidx.car.app.connection.CarConnection
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.edit
@@ -172,6 +172,7 @@ import org.videolan.vlc.gui.helpers.UiTools
 import org.videolan.vlc.gui.helpers.getBitmapFromDrawable
 import org.videolan.vlc.gui.preferences.PreferencesActivity
 import org.videolan.vlc.gui.video.PopupManager
+import org.videolan.vlc.bridge.PlaybackServiceBridge
 import org.videolan.vlc.gui.video.VideoPlayerActivity
 import org.videolan.vlc.media.MediaSessionBrowser
 import org.videolan.vlc.media.MediaUtils
@@ -264,7 +265,7 @@ class PlaybackService : MediaBrowserServiceCompat(), LifecycleOwner, CoroutineSc
     private var popupManager: PopupManager? = null
 
     private val mediaFactory = FactoryManager.getFactory(IMediaFactory.factoryId) as IMediaFactory
-    private lateinit var carConnection: CarConnection
+    // private lateinit var carConnection: CarConnection
 
     /**
      * Binds a [MediaBrowserCompat] to the service to allow receiving the
@@ -783,12 +784,15 @@ class PlaybackService : MediaBrowserServiceCompat(), LifecycleOwner, CoroutineSc
             addAction(CUSTOM_ACTION)
         }
         registerReceiverCompat(receiver, filter, false)
+        // 临时注释掉对 CarConnection 的引用，防止在缺少依赖时闪退
+        /*
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             carConnection = CarConnection(this)
             carConnection.type.observeForever {
                 if (it != null) executeUpdate(true)
             }
         }
+        */
 
         keyguardManager = getSystemService()!!
         renderer.observe(this, Observer { setRenderer(it) })
@@ -796,6 +800,10 @@ class PlaybackService : MediaBrowserServiceCompat(), LifecycleOwner, CoroutineSc
         headSetDetection.observe(this, Observer { detectHeadset(it) })
         equalizer.observe(this, Observer { setEqualizer(it) })
         serviceFlow.value = this
+        
+        // 绑定 Bridge 实例
+        PlaybackServiceBridge.bindService(this)
+        
         mediaBrowserCompat = MediaBrowserInstance.getInstance(this)
         PlaylistManager.playingState.value = true
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -987,8 +995,10 @@ class PlaybackService : MediaBrowserServiceCompat(), LifecycleOwner, CoroutineSc
 
     fun setTime(time: Long, fast: Boolean = false) {
         val shouldFast = fast || (!playlistManager.isBenchmark && settings.getBoolean(KEY_ALWAYS_FAST_SEEK, false))
+        Log.e(TAG, "XR_CONTROL PlaybackService.setTime enter time=$time fast=$fast shouldFast=$shouldFast isPlaying=$isPlaying isPaused=$isPaused current=${getTime()} length=$length rate=$rate")
         playlistManager.player.setTime(time, shouldFast)
         publishState(time)
+        Log.e(TAG, "XR_CONTROL PlaybackService.setTime exit time=$time current=${getTime()} isPlaying=$isPlaying isPaused=$isPaused")
     }
 
     fun getTime() = playlistManager.player.getCurrentTime()
@@ -1115,15 +1125,25 @@ class PlaybackService : MediaBrowserServiceCompat(), LifecycleOwner, CoroutineSc
     }
 
     @MainThread
-    fun pause() = playlistManager.pause()
+    fun pause() {
+        Log.e(TAG, "XR_CONTROL PlaybackService.pause enter isPlaying=$isPlaying isPaused=$isPaused time=${getTime()} length=$length rate=$rate")
+        playlistManager.pause()
+        Log.e(TAG, "XR_CONTROL PlaybackService.pause exit isPlaying=$isPlaying isPaused=$isPaused time=${getTime()} length=$length rate=$rate")
+    }
 
     @MainThread
-    fun play() = playlistManager.play()
+    fun play() {
+        Log.e(TAG, "XR_CONTROL PlaybackService.play enter isPlaying=$isPlaying isPaused=$isPaused time=${getTime()} length=$length rate=$rate")
+        playlistManager.play()
+        Log.e(TAG, "XR_CONTROL PlaybackService.play exit isPlaying=$isPlaying isPaused=$isPaused time=${getTime()} length=$length rate=$rate")
+    }
 
     @MainThread
     @JvmOverloads
     fun stop(systemExit: Boolean = false, video: Boolean = false) {
+        Log.e(TAG, "XR_CONTROL PlaybackService.stop enter systemExit=$systemExit video=$video isPlaying=$isPlaying isPaused=$isPaused time=${getTime()} length=$length rate=$rate")
         playlistManager.stop(systemExit, video)
+        Log.e(TAG, "XR_CONTROL PlaybackService.stop exit systemExit=$systemExit video=$video isPlaying=$isPlaying isPaused=$isPaused time=${getTime()} length=$length rate=$rate")
     }
 
     private fun initMediaSession() {
@@ -1648,7 +1668,16 @@ class PlaybackService : MediaBrowserServiceCompat(), LifecycleOwner, CoroutineSc
     }
 
     @MainThread
-    fun load(media: MediaWrapper) = load(listOf(media), 0)
+    fun load(media: MediaWrapper) {
+        load(listOf(media), 0)
+    }
+
+    @MainThread
+    fun load(media: org.videolan.libvlc.Media) {
+        mediaplayer.media = media
+        // 为了预加载，不直接调用 play，因为已经在 media 中注入了 :start-paused
+        mediaplayer.play()
+    }
 
     /**
      * Play a media from the media list (playlist)
@@ -1819,12 +1848,15 @@ class PlaybackService : MediaBrowserServiceCompat(), LifecycleOwner, CoroutineSc
     @MainThread
     @JvmOverloads
     fun seek(time: Long, length: Double = this.length.toDouble(), fromUser: Boolean = false, fast: Boolean = false) {
+        Log.e(TAG, "XR_CONTROL PlaybackService.seek enter time=$time lengthArg=$length fromUser=$fromUser fast=$fast isPlaying=$isPlaying isPaused=$isPaused current=${getTime()} serviceLength=${this.length} rate=$rate")
         if (length > 0.0) this.setTime(time, fast) else {
             setPosition((time.toFloat() / NO_LENGTH_PROGRESS_MAX.toFloat()))
             publishState(time)
         }
+        if (fromUser) playlistManager.saveExplicitPlaybackTime(time)
         // Required to update timeline when paused
         if (fromUser && isPaused) showNotification()
+        Log.e(TAG, "XR_CONTROL PlaybackService.seek exit time=$time current=${getTime()} isPlaying=$isPlaying isPaused=$isPaused")
     }
 
     @MainThread
@@ -2078,11 +2110,8 @@ class PlaybackService : MediaBrowserServiceCompat(), LifecycleOwner, CoroutineSc
     }
 
     fun isCarMode(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            carConnection.type.value?.let { it > CarConnection.CONNECTION_TYPE_NOT_CONNECTED } == true
-        } else {
-            (getSystemService(UI_MODE_SERVICE) as UiModeManager).currentModeType == Configuration.UI_MODE_TYPE_CAR
-        }
+        // 由于移除了 CarConnection 依赖，这里强制返回普通模式的检测
+        return (getSystemService(UI_MODE_SERVICE) as UiModeManager).currentModeType == Configuration.UI_MODE_TYPE_CAR
     }
 }
 
@@ -2125,4 +2154,3 @@ fun PlaybackService.manageAbRepeatStep(abRepeatReset: View, abRepeatStop: View, 
         }
     }
 }
-

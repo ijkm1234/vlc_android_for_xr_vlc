@@ -60,6 +60,9 @@ import org.videolan.vlc.gui.dialogs.SubtitleDownloaderDialogFragment
 import org.videolan.vlc.providers.medialibrary.FoldersProvider
 import org.videolan.vlc.providers.medialibrary.MedialibraryProvider
 import org.videolan.vlc.providers.medialibrary.VideoGroupsProvider
+import org.videolan.vlc.bridge.PlaybackServiceBridge
+import org.videolan.vlc.bridge.UnityBridgeContract
+import org.videolan.vlc.bridge.UnityMessageDispatcher
 import org.videolan.vlc.util.FileUtils
 import org.videolan.vlc.util.Permissions
 import org.videolan.vlc.util.TextUtils
@@ -183,6 +186,7 @@ object MediaUtils {
 
     fun openMedia(context: Context?, media: MediaWrapper?) {
         if (media == null || context == null) return
+        requestExpandedAudioPlayerForUserSelection(context, media)
         SuspendDialogCallback(context) { service -> service.load(media) }
     }
 
@@ -204,6 +208,75 @@ object MediaUtils {
                 service.load(media)
             }
         }
+    }
+
+    fun showUnityView(context: Context) {
+        android.util.Log.e("Unity", "==== [DEBUG_VLC] showUnityView TRIGGERED ====")
+        PlaybackServiceBridge.cancelVlcRestoreAfterSystemPanel()
+        UnityMessageDispatcher.send(UnityBridgeContract.Target.LIBRARY_LAUNCHER, UnityBridgeContract.Method.SHOW_UNITY_VIEW)
+        android.util.Log.e("Unity", "==== [DEBUG_VLC] ShowUnityView dispatched ====")
+
+        if (!moveVlcPickerTaskToBack(context)) {
+            android.util.Log.e("Unity", "==== [DEBUG_VLC] Failed to move VLC picker task to back ====")
+        }
+    }
+
+    private fun moveVlcPickerTaskToBack(context: Context): Boolean {
+        val activity = findActivityContext(context) ?: return false
+
+        return runCatching {
+            android.util.Log.e("Unity", "==== [DEBUG_VLC] Moving VLC picker task to back after media selection ====")
+            if (android.os.Looper.myLooper() != android.os.Looper.getMainLooper()) {
+                activity.runOnUiThread {
+                    val moved = activity.moveTaskToBack(true)
+                    android.util.Log.e("Unity", "==== [DEBUG_VLC] moveTaskToBack result=$moved activity=${activity.componentName} ====")
+                }
+                true
+            } else {
+                val moved = activity.moveTaskToBack(true)
+                android.util.Log.e("Unity", "==== [DEBUG_VLC] moveTaskToBack result=$moved activity=${activity.componentName} ====")
+                moved
+            }
+        }.getOrElse {
+            android.util.Log.e("Unity", "==== [DEBUG_VLC] Failed to move VLC picker task to back ====", it)
+            false
+        }
+    }
+
+    private fun findActivityContext(context: Context): Activity? {
+        (context as? Activity)?.takeUnless { it.isFinishing }?.let { return it }
+        AppContextProvider.currentActivity?.takeUnless { it.isFinishing }?.let { return it }
+
+        synchronized(AppContextProvider.aliveActivities) {
+            val iterator = AppContextProvider.aliveActivities.iterator()
+            while (iterator.hasNext()) {
+                val activity = iterator.next().get()
+                if (activity == null) iterator.remove()
+                else if (!activity.isFinishing) return activity
+            }
+        }
+        return null
+    }
+
+    fun requestUnityStartPlay(context: Context, media: MediaWrapper, index: Int) {
+        android.util.Log.e("Unity", "==== [DEBUG_VLC] requestUnityStartPlay TRIGGERED for: ${media.title} ====")
+
+        val uriString = media.uri.toString()
+        val displayUriString = android.net.Uri.decode(uriString)
+        android.util.Log.e("Unity", "==== [DEBUG_VLC] Original URI: ${media.uri} ====")
+        android.util.Log.e("Unity", "==== [DEBUG_VLC] Playback URI: $uriString ====")
+        android.util.Log.e("Unity", "==== [DEBUG_VLC] Display URI: $displayUriString ====")
+
+        val json = org.json.JSONObject()
+        json.put("uri", uriString)
+        json.put("index", index)
+
+        val dataToSend = json.toString()
+        android.util.Log.e("Unity", "==== [XR_FROM_START] requestUnityStartPlay outbound index=$index uri=$uriString mediaTime=${media.time} hasFromStart=${media.hasFlag(MediaWrapper.MEDIA_FROM_START)} flags=${media.flags}; payloadHasFromStart=false ====")
+        android.util.Log.e("Unity", "==== [DEBUG_VLC] Final JSON to Unity: $dataToSend ====")
+
+        UnityMessageDispatcher.sendToPlayback(UnityBridgeContract.Method.START_PLAY, dataToSend)
+        android.util.Log.e("Unity", "==== [DEBUG_VLC] UnitySendMessage dispatched ====")
     }
 
     fun playTracks(context: Context, item: MediaLibraryItem, position: Int, shuffle:Boolean = false) = context.scope.launch {
@@ -297,6 +370,7 @@ object MediaUtils {
         SuspendDialogCallback(context) { service ->
             val realPos = if (shuffle) SecureRandom().nextInt(list.size)
             else position
+            requestExpandedAudioPlayerForUserSelection(context, list.getOrNull(realPos))
             service.load(list, realPos)
             if (shuffle && !service.isShuffling) service.shuffle()
         }
@@ -307,8 +381,21 @@ object MediaUtils {
         if (playlistId == -1L || context == null) return
         SuspendDialogCallback(context) { service ->
            val playlist =  context.getFromMl { getPlaylist(playlistId, Settings.includeMissing, false) }
-            service.load(playlist.getPagedTracks(playlist.getRealTracksCount(Settings.includeMissing, false), 0, Settings.includeMissing, false), position)
+            val tracks = playlist.getPagedTracks(playlist.getRealTracksCount(Settings.includeMissing, false), 0, Settings.includeMissing, false)
+            tracks.forEachIndexed { index, media ->
+                val slaveUris = media.slaves?.joinToString { it.uri.replace(Regex("://[^/@]+@"), "://***@") }
+                Log.e(TAG, "[PlaylistSlavesCheck] openPlaylist loaded playlistId=$playlistId itemIndex=$index title=${media.title} location=${media.location.replace(Regex("://[^/@]+@"), "://***@")} slavesNull=${media.slaves == null} slavesCount=${media.slaves?.size ?: 0} slaveUris=$slaveUris")
+            }
+            requestExpandedAudioPlayerForUserSelection(context, tracks.getOrNull(position))
+            service.load(tracks, position)
             if (shuffle && !service.isShuffling) service.shuffle()
+        }
+    }
+
+    private fun requestExpandedAudioPlayerForUserSelection(context: Context?, media: MediaWrapper?) {
+        if (context !is AudioPlayerContainerActivity || media == null) return
+        if (media.type == MediaWrapper.TYPE_AUDIO || media.hasFlag(MediaWrapper.MEDIA_FORCE_AUDIO)) {
+            context.requestExpandAudioPlayerOnNextShow()
         }
     }
 

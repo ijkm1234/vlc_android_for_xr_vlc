@@ -757,6 +757,17 @@ public abstract class MediaWrapper extends MediaLibraryItem implements Parcelabl
         return mSlaves;
     }
 
+    public void addSlave(IMedia.Slave slave) {
+        if (mSlaves == null) {
+            mSlaves = new IMedia.Slave[] { slave };
+        } else {
+            IMedia.Slave[] newSlaves = new IMedia.Slave[mSlaves.length + 1];
+            System.arraycopy(mSlaves, 0, newSlaves, 0, mSlaves.length);
+            newSlaves[mSlaves.length] = slave;
+            mSlaves = newSlaves;
+        }
+    }
+
     @Override
     public int describeContents() {
         return 0;

@@ -182,5 +182,4 @@
                 app:singleLineTitle="false" />
     </PreferenceCategory>
 
-
 </androidx.preference.PreferenceScreen>

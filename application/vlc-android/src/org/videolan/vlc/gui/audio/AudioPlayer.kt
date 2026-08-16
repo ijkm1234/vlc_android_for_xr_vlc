@@ -796,6 +796,10 @@ class AudioPlayer : Fragment(), PlaylistAdapter.IPlayer, TextWatcher, IAudioPlay
         settings.putSingle(KEY_AUDIO_PLAYER_SHOW_COVER, isShowingCover())
     }
 
+    fun onCollapsePlayerClick(@Suppress("UNUSED_PARAMETER") view: View?) {
+        (activity as? AudioPlayerContainerActivity)?.slideDownAudioPlayer()
+    }
+
     fun onShuffleClick(@Suppress("UNUSED_PARAMETER") view: View) {
         playlistModel.shuffle()
         updateShuffleMode()

@@ -4,6 +4,7 @@ import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.LifecycleOwner
+import kotlinx.coroutines.launch
 import org.videolan.libvlc.Dialog
 import org.videolan.vlc.gui.dialogs.VlcLoginDialog
 import org.videolan.vlc.gui.dialogs.VlcProgressDialog
@@ -43,6 +44,10 @@ class DialogDelegate : IDialogDelegate {
 
         override fun onDisplay(dialog: Dialog.ErrorMessage) {
             dialogEvt.value = Cancel(dialog)
+            // XR_VLC: When libvlc emits an error message (like SMB connection failed), notify user via Toast
+            kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                android.widget.Toast.makeText(org.videolan.resources.AppContextProvider.appContext, "连接失败: ${dialog.title} - ${dialog.text}", android.widget.Toast.LENGTH_LONG).show()
+            }
         }
 
         override fun onDisplay(dialog: Dialog.LoginDialog) {

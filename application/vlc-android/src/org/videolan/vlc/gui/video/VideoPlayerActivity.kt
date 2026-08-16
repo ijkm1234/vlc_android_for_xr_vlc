@@ -763,6 +763,7 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
     }
 
     override fun onNewIntent(intent: Intent) {
+        Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.onNewIntent enter playbackStarted=$playbackStarted currentVideoUri=$videoUri newData=${intent.data} hasItemLocation=${intent.hasExtra(PLAY_EXTRA_ITEM_LOCATION)} serviceBound=${service != null} servicePlaying=${service?.isPlaying} servicePaused=${service?.isPaused}")
         super.onNewIntent(intent)
         setIntent(intent)
         if (playbackStarted) service?.run {
@@ -789,13 +790,19 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
             lastTime = -1
             forcedTime = lastTime
             enableSubs()
-            if (this.isPlaying) loadMedia(forceUsingNew = true)
+            if (this.isPlaying) {
+                Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.onNewIntent route=loadMedia forceUsingNew=true newVideoUri=$videoUri serviceTime=${getTime()} length=$length")
+                loadMedia(forceUsingNew = true)
+            } else {
+                Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.onNewIntent skipped loadMedia because service isPlaying=false newVideoUri=$videoUri isPaused=$isPaused")
+            }
         }
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     override fun onPause() {
         val finishing = isFinishing
+        Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.onPause enter finishing=$finishing playbackStarted=$playbackStarted pip=$isInPictureInPictureMode interactive=$isInteractive servicePlaying=${service?.isPlaying} servicePaused=${service?.isPaused} time=${service?.getTime()} length=${service?.length}")
         if (finishing)
             overridePendingTransition(0, 0)
         else
@@ -807,8 +814,10 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
 
         if (!isInPictureInPictureMode
                 && (finishing || (AndroidUtil.isNougatOrLater && !AndroidUtil.isOOrLater //Video on background on Nougat Android TVs
-                        && AndroidDevices.isAndroidTv && !requestVisibleBehind(true))))
+                        && AndroidDevices.isAndroidTv && !requestVisibleBehind(true)))) {
+            Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.onPause route=stopPlayback finishing=$finishing playbackStarted=$playbackStarted servicePlaying=${service?.isPlaying} servicePaused=${service?.isPaused}")
             stopPlayback()
+        }
     }
 
     @TargetApi(Build.VERSION_CODES.O)
@@ -923,6 +932,7 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
     }
 
     override fun onStart() {
+        Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.onStart enter playbackStarted=$playbackStarted serviceBound=${service != null} intentData=${intent.data} videoUri=$videoUri")
         medialibrary.pauseBackgroundOperations()
         super.onStart()
         startedScope = MainScope()
@@ -964,6 +974,7 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
 
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
     override fun onStop() {
+        Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.onStop enter finishing=$isFinishing playbackStarted=$playbackStarted interactive=$isInteractive servicePlaying=${service?.isPlaying} servicePaused=${service?.isPaused} time=${service?.getTime()} length=${service?.length}")
         super.onStop()
         service?.playlistManager?.let {
             savedMediaList = ArrayList(it.getMediaList())
@@ -982,6 +993,7 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
             switchToAudioMode(false)
         }
         cleanUI()
+        Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.onStop route=stopPlayback playbackStarted=$playbackStarted servicePlaying=${service?.isPlaying} servicePaused=${service?.isPaused}")
         stopPlayback()
         service?.playlistManager?.videoStatsOn?.postValue(false)
         if (isInteractive && !isPlayingPopup)
@@ -1002,6 +1014,7 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
         addedExternalSubs.clear()
         medialibrary.resumeBackgroundOperations()
         videoRemoteJob?.cancel()
+        Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.onStop exit savedTime=$savedTime serviceCleared=${service == null} videoUri=$videoUri")
     }
 
     private fun saveBrightness() {
@@ -1035,27 +1048,37 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
     private fun startPlayback() {
         /* start playback only when audio service and both surfaces are ready */
-        if (playbackStarted) return
+        Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.startPlayback enter playbackStarted=$playbackStarted serviceBound=${service != null} displayPrimary=${displayManager.isPrimary} renderer=${displayManager.isOnRenderer} videoUri=$videoUri")
+        if (playbackStarted) {
+            Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.startPlayback skipped alreadyStarted servicePlaying=${service?.isPlaying} servicePaused=${service?.isPaused}")
+            return
+        }
 
         service?.run {
             playbackStarted = true
+            Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.startPlayback serviceReady isPlaying=$isPlaying isPaused=$isPaused hasMedia=${hasMedia()} time=${getTime()} length=$length currentUri=${currentMediaWrapper?.uri}")
 
             val vlcVout = vout
             if (vlcVout != null && vlcVout.areViewsAttached()) {
+                Log.e(XR_SURFACE_TAG, "VideoPlayerActivity.startPlayback existingVoutAttached popup=$isPlayingPopup viewsAttached=${vlcVout.areViewsAttached()}")
                 if (isPlayingPopup) {
+                    Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.startPlayback route=stopPopupBeforeAttach")
                     stop(video = true)
                 } else
                     vlcVout.detachViews()
             }
             val mediaPlayer = mediaplayer
             if (!displayManager.isOnRenderer) videoLayout?.let {
+                Log.e(XR_SURFACE_TAG, "VideoPlayerActivity.startPlayback attachViews renderer=${displayManager.isOnRenderer} layoutWidth=${it.width} layoutHeight=${it.height}")
                 mediaPlayer.attachViews(it, displayManager, true, false)
                 val size = if (isBenchmark) MediaPlayer.ScaleType.SURFACE_FILL else MediaPlayer.ScaleType.entries[settings.getInt(VIDEO_RATIO, MediaPlayer.ScaleType.SURFACE_BEST_FIT.ordinal)]
                 mediaPlayer.videoScale = size
+                Log.e(XR_SURFACE_TAG, "VideoPlayerActivity.startPlayback attachedViews scale=$size")
             }
 
             initUI()
 
+            Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.startPlayback route=loadMedia")
             loadMedia()
         }
     }
@@ -1077,9 +1100,14 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
     }
 
     private fun stopPlayback() {
-        if (!playbackStarted) return
+        Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.stopPlayback enter playbackStarted=$playbackStarted finishing=$isFinishing displayPrimary=${displayManager.isPrimary} interactive=$isInteractive switchingView=$switchingView switchToPopup=$switchToPopup playQueueFinished=${service?.playQueueFinished} serviceBound=${service != null} servicePlaying=${service?.isPlaying} servicePaused=${service?.isPaused} time=${service?.getTime()} length=${service?.length}")
+        if (!playbackStarted) {
+            Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.stopPlayback skipped playbackNotStarted")
+            return
+        }
 
         if (!displayManager.isPrimary && !isFinishing || service == null) {
+            Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.stopPlayback detachOnly displayPrimary=${displayManager.isPrimary} finishing=$isFinishing serviceBound=${service != null}")
             playbackStarted = false
             return
         }
@@ -1087,7 +1115,11 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
             val tv = Settings.showTvUi
             val interactive = isInteractive
             wasPaused = !isPlaying || (!tv && !interactive)
-            if (wasPaused && !playQueueFinished) settings.putSingle(VIDEO_PAUSED, true)
+            Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.stopPlayback computed tv=$tv interactive=$interactive servicePlaying=$isPlaying servicePaused=$isPaused wasPaused=$wasPaused playQueueFinished=$playQueueFinished time=${getTime()} length=$length currentUri=${currentMediaWrapper?.uri}")
+            if (wasPaused && !playQueueFinished) {
+                Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.stopPlayback save VIDEO_PAUSED=true reason=wasPaused currentUri=${currentMediaWrapper?.uri} time=${getTime()} length=$length")
+                settings.putSingle(VIDEO_PAUSED, true)
+            }
             if (!isFinishing) {
                 currentAudioTrack = audioTrack
                 currentSpuTrack = spuTrack
@@ -1100,6 +1132,7 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
 
             handler.removeCallbacksAndMessages(null)
             if (hasMedia() && switchingView) {
+                Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.stopPlayback route=switchingView switchToPopup=$switchToPopup currentMediaPosition=$currentMediaPosition currentUri=${currentMediaWrapper?.uri}")
                 if (BuildConfig.DEBUG) Log.d(TAG, "mLocation = \"$videoUri\"")
                 if (switchToPopup)
                     switchToPopup(currentMediaPosition)
@@ -1120,7 +1153,9 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
                 else
                     savedTime -= 2000 // go back 2 seconds, to compensate loading time
             }
+            Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.stopPlayback route=service.stop video=true savedTime=$savedTime servicePlaying=$isPlaying servicePaused=$isPaused currentUri=${currentMediaWrapper?.uri}")
             stop(video = true)
+            Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.stopPlayback exit after service.stop playbackStarted=$playbackStarted servicePlaying=$isPlaying servicePaused=$isPaused")
         }
     }
 
@@ -1576,6 +1611,9 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
 
     override fun onMediaPlayerEvent(event: MediaPlayer.Event) {
         service?.let { service ->
+            val details = mediaPlayerEventDetails(event)
+            if (shouldLogMediaPlayerEvent(event.type))
+                Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.onMediaPlayerEvent event=${mediaPlayerEventName(event.type)} type=${event.type} details=$details servicePlaying=${service.isPlaying} servicePaused=${service.isPaused} time=${service.getTime()} length=${service.length} playbackStarted=$playbackStarted wasPaused=$wasPaused currentUri=${service.currentMediaWrapper?.uri}")
             when (event.type) {
                 MediaPlayer.Event.Playing -> onPlaying()
                 MediaPlayer.Event.Paused -> overlayDelegate.updateOverlayPausePlay()
@@ -2086,11 +2124,17 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
     }
 
     fun doPlayPause() {
-        if (service?.isPausable != true) return
+        Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.doPlayPause enter pausable=${service?.isPausable} servicePlaying=${service?.isPlaying} servicePaused=${service?.isPaused} time=${service?.getTime()} length=${service?.length}")
+        if (service?.isPausable != true) {
+            Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.doPlayPause skipped notPausable servicePlaying=${service?.isPlaying} servicePaused=${service?.isPaused}")
+            return
+        }
         if (service?.isPlaying == true) {
+            Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.doPlayPause route=pause")
             overlayDelegate.showOverlayTimeout(OVERLAY_INFINITE)
             pause()
         } else {
+            Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.doPlayPause route=play")
             if (Settings.videoHudDelay != -1) handler.sendEmptyMessageDelayed(FADE_OUT, 800L)
             play()
         }
@@ -2106,10 +2150,12 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
 
     internal fun seek(position: Long, length: Long, fromUser: Boolean = false, fast:Boolean = false) {
         service?.let { service ->
+            Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.seek enter position=$position lengthArg=$length fromUser=$fromUser fast=$fast current=${service.getTime()} serviceLength=${service.length} servicePlaying=${service.isPlaying} servicePaused=${service.isPaused}")
             forcedTime = position
             lastTime = service.getTime()
             service.seek(position, length.toDouble(), fromUser, fast)
             service.playlistManager.player.updateProgress(position)
+            Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.seek exit position=$position current=${service.getTime()} servicePlaying=${service.isPlaying} servicePaused=${service.isPaused}")
         }
     }
 
@@ -2143,16 +2189,20 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
      *
      */
     fun play() {
+        Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.play enter servicePlaying=${service?.isPlaying} servicePaused=${service?.isPaused} time=${service?.getTime()} length=${service?.length}")
         service?.play()
         rootView?.run { keepScreenOn = true }
+        Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.play exit servicePlaying=${service?.isPlaying} servicePaused=${service?.isPaused} time=${service?.getTime()} length=${service?.length}")
     }
 
     /**
      *
      */
     private fun pause() {
+        Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.pause enter servicePlaying=${service?.isPlaying} servicePaused=${service?.isPaused} time=${service?.getTime()} length=${service?.length}")
         service?.pause()
         rootView?.run { keepScreenOn = false }
+        Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.pause exit servicePlaying=${service?.isPlaying} servicePaused=${service?.isPaused} time=${service?.getTime()} length=${service?.length}")
     }
 
 
@@ -2166,6 +2216,7 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
     @SuppressLint("SdCardPath")
     @TargetApi(12)
     protected open fun loadMedia(fromStart: Boolean = false, forceUsingNew:Boolean = false) {
+        Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.loadMedia enter argFromStart=$fromStart forceUsingNew=$forceUsingNew playbackStarted=$playbackStarted wasPaused=$wasPaused askResume=$askResume videoUri=$videoUri serviceBound=${service != null}")
         if (fromStart) {
             askResume = false
             intent.putExtra(PLAY_EXTRA_FROM_START, fromStart)
@@ -2182,6 +2233,7 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
             val currentMedia = service.currentMediaWrapper
             val hasMedia = currentMedia != null
             val isPlaying = service.isPlaying
+            Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.loadMedia serviceState hasMedia=$hasMedia currentUri=${currentMedia?.uri} servicePlaying=$isPlaying servicePaused=${service.isPaused} serviceTime=${service.getTime()} serviceLength=${service.length} currentIndex=${service.currentMediaPosition}")
             /*
          * If the activity has been paused by pressing the power button, then
          * pressing it again will show the lock screen.
@@ -2223,12 +2275,14 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
                 if (intent.hasExtra(PLAY_EXTRA_ITEM_TITLE))
                     itemTitle = extras.getString(PLAY_EXTRA_ITEM_TITLE)
             }
+            Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.loadMedia parsed videoUri=$videoUri fromStart=$fromStart startTime=$startTime positionInPlaylist=$positionInPlaylist wasPaused=$wasPaused askResume=$askResume forceUsingNew=$forceUsingNew extrasPresent=${extras != null}")
             val restorePlayback = hasMedia && currentMedia?.uri == videoUri
             if (startTime == 0L && savedTime > 0L && restorePlayback) startTime = savedTime
 
             var openedMedia: MediaWrapper? = null
             val resumePlaylist = service.isValidIndex(positionInPlaylist)
             val continueplayback = isPlaying && (restorePlayback || positionInPlaylist == service.currentMediaPosition)
+            Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.loadMedia decision restorePlayback=$restorePlayback resumePlaylist=$resumePlaylist continueplayback=$continueplayback savedTime=$savedTime currentUri=${currentMedia?.uri} targetUri=$videoUri")
             if (resumePlaylist) {
                 // Provided externally from AudioService
                 if (BuildConfig.DEBUG) Log.v(TAG, "Continuing playback from PlaybackService at index $positionInPlaylist")
@@ -2272,11 +2326,15 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
                 val medialoaded = media != null
                 if (!medialoaded) media = if (hasMedia && !forceUsingNew) currentMedia else MLServiceLocator.getAbstractMediaWrapper(uri)
                 itemTitle?.let { media?.title = Uri.decode(it) }
-                if (wasPaused) media?.addFlags(MediaWrapper.MEDIA_PAUSED)
+                if (wasPaused) {
+                    Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.loadMedia add MEDIA_PAUSED uri=${media?.uri} startTime=$startTime currentServicePlaying=${service.isPlaying} currentServicePaused=${service.isPaused}")
+                    media?.addFlags(MediaWrapper.MEDIA_PAUSED)
+                }
                 if (intent.hasExtra(PLAY_DISABLE_HARDWARE)) media?.addFlags(MediaWrapper.MEDIA_NO_HWACCEL)
                 media!!.removeFlags(MediaWrapper.MEDIA_FORCE_AUDIO)
                 media.addFlags(MediaWrapper.MEDIA_VIDEO)
                 if (fromStart) media.addFlags(MediaWrapper.MEDIA_FROM_START)
+                Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.loadMedia prepared media uri=${media.uri} flags=${media.flags} medialoaded=$medialoaded fromStart=$fromStart startTime=$startTime hasPaused=${media.hasFlag(MediaWrapper.MEDIA_PAUSED)} hasFromStart=${media.hasFlag(MediaWrapper.MEDIA_FROM_START)}")
 
                 // Set resume point
                 if (!continueplayback && !fromStart) {
@@ -2287,16 +2345,25 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
                 // Handle playback
                 if (resumePlaylist) {
                     if (continueplayback) {
+                        Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.loadMedia route=continuePlayback positionInPlaylist=$positionInPlaylist displayPrimary=${displayManager.isPrimary}")
                         if (displayManager.isPrimary) service.flush()
                         onPlaying()
-                    } else service.playIndex(positionInPlaylist)
-                } else service.load(media)
+                    } else {
+                        Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.loadMedia route=playIndex positionInPlaylist=$positionInPlaylist mediaUri=${media.uri} flags=${media.flags}")
+                        service.playIndex(positionInPlaylist)
+                    }
+                } else {
+                    Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.loadMedia route=service.load mediaUri=${media.uri} flags=${media.flags} startTime=$startTime")
+                    service.load(media)
+                }
 
                 // Get the title
                 if (itemTitle == null && "content" != uri.scheme) title = uri.lastPathSegment
             } else if (service.hasMedia() && !displayManager.isPrimary) {
+                Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.loadMedia route=secondaryDisplayOnPlaying currentUri=${service.currentMediaWrapper?.uri}")
                 onPlaying()
             } else {
+                Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.loadMedia route=loadLastPlaylist hasMedia=${service.hasMedia()} displayPrimary=${displayManager.isPrimary}")
                 service.loadLastPlaylist(PLAYLIST_TYPE_ALL)
             }
             if (itemTitle != null) title = itemTitle
@@ -2305,12 +2372,14 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
             }
 
             if (wasPaused) {
+                Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.loadMedia pausedModeOverlay startTime=$startTime videoUri=$videoUri")
                 // XXX: Workaround to update the seekbar position
                 forcedTime = startTime
                 forcedTime = -1
                 overlayDelegate.showOverlay(true)
             }
             enableSubs()
+            Log.e(XR_CONTROL_TAG, "VideoPlayerActivity.loadMedia exit videoUri=$videoUri wasPaused=$wasPaused servicePlaying=${service.isPlaying} servicePaused=${service.isPaused} time=${service.getTime()} length=${service.length}")
         }
     }
 
@@ -2571,6 +2640,8 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
     companion object {
 
         private const val TAG = "VLC/VideoPlayerActivity"
+        private const val XR_CONTROL_TAG = "XR_CONTROL"
+        private const val XR_SURFACE_TAG = "XR_SURFACE_DEBUG"
 
         private val ACTION_RESULT = "player.result".buildPkgString()
         private const val EXTRA_POSITION = "extra_position"
@@ -2578,6 +2649,36 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
         private const val EXTRA_URI = "extra_uri"
         const val FROM_EXTERNAL = "from_external"
         private const val RESULT_CONNECTION_FAILED = RESULT_FIRST_USER + 1
+
+        private fun mediaPlayerEventName(type: Int): String = when (type) {
+            MediaPlayer.Event.Opening -> "Opening"
+            MediaPlayer.Event.Buffering -> "Buffering"
+            MediaPlayer.Event.Playing -> "Playing"
+            MediaPlayer.Event.Paused -> "Paused"
+            MediaPlayer.Event.Stopped -> "Stopped"
+            MediaPlayer.Event.EndReached -> "EndReached"
+            MediaPlayer.Event.EncounteredError -> "EncounteredError"
+            MediaPlayer.Event.TimeChanged -> "TimeChanged"
+            MediaPlayer.Event.PositionChanged -> "PositionChanged"
+            MediaPlayer.Event.Vout -> "Vout"
+            MediaPlayer.Event.ESAdded -> "ESAdded"
+            else -> "type_$type"
+        }
+
+        private fun mediaPlayerEventDetails(event: MediaPlayer.Event): String = when (event.type) {
+            MediaPlayer.Event.Buffering -> "buffering=${event.buffering}"
+            MediaPlayer.Event.TimeChanged -> "time=${event.timeChanged}"
+            MediaPlayer.Event.PositionChanged -> "position=${event.positionChanged}"
+            MediaPlayer.Event.Vout -> "voutCount=${event.voutCount}"
+            MediaPlayer.Event.ESAdded -> "esType=${event.esChangedType} esId=${event.esChangedID}"
+            else -> ""
+        }
+
+        private fun shouldLogMediaPlayerEvent(type: Int): Boolean = when (type) {
+            MediaPlayer.Event.TimeChanged,
+            MediaPlayer.Event.PositionChanged -> false
+            else -> true
+        }
         private const val RESULT_PLAYBACK_ERROR = RESULT_FIRST_USER + 2
         private const val RESULT_VIDEO_TRACK_LOST = RESULT_FIRST_USER + 3
         internal const val DEFAULT_FOV = 80f

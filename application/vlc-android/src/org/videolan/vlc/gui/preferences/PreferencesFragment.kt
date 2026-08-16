@@ -109,6 +109,9 @@ class PreferencesFragment : BasePreferenceFragment(), SharedPreferences.OnShared
                 R.xml.preferences_audio -> loadFragment(PreferencesAudio().apply {
                     arguments = bundleOf(EXTRA_PREF_END_POINT to endPoint)
                 })
+                R.xml.preferences_xr_controller -> loadFragment(PreferencesXRController().apply {
+                    arguments = bundleOf(EXTRA_PREF_END_POINT to endPoint)
+                })
                 R.xml.preferences_adv -> loadFragment(PreferencesAdvanced().apply {
                     arguments = bundleOf(EXTRA_PREF_END_POINT to endPoint)
                 })
@@ -116,9 +119,6 @@ class PreferencesFragment : BasePreferenceFragment(), SharedPreferences.OnShared
                     arguments = bundleOf(EXTRA_PREF_END_POINT to endPoint)
                 })
                 R.xml.preferences_remote_access -> loadFragment(PreferencesRemoteAccess().apply {
-                    arguments = bundleOf(EXTRA_PREF_END_POINT to endPoint)
-                })
-                R.xml.preferences_android_auto -> loadFragment(PreferencesAndroidAuto().apply {
                     arguments = bundleOf(EXTRA_PREF_END_POINT to endPoint)
                 })
             }
@@ -164,6 +164,7 @@ class PreferencesFragment : BasePreferenceFragment(), SharedPreferences.OnShared
             "video_category" -> loadFragment(PreferencesVideo())
             "subtitles_category" -> loadFragment(PreferencesSubtitles())
             "audio_category" -> loadFragment(PreferencesAudio())
+            "xr_controller_shortcuts" -> loadFragment(PreferencesXRController())
             "equalizer" -> startActivity(Intent(requireActivity().applicationContext, EqualizerSettingsActivity::class.java))
             "adv_category" -> loadFragment(PreferencesAdvanced())
             "casting_category" -> loadFragment(PreferencesCasting())
@@ -180,7 +181,6 @@ class PreferencesFragment : BasePreferenceFragment(), SharedPreferences.OnShared
 
             }
             "remote_access_category" -> loadFragment(PreferencesRemoteAccess())
-            "android_auto_category" -> loadFragment(PreferencesAndroidAuto())
             PLAYBACK_HISTORY -> {
                 val activity = activity
                 activity?.setResult(RESULT_RESTART)

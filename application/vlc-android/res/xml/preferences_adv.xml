@@ -20,7 +20,7 @@
 
     <CheckBoxPreference
             app:singleLineTitle="false"
-            android:defaultValue="true"
+            android:defaultValue="false"
             android:key="prefer_smbv1"
             android:summary="@string/prefersmbv1_summary"
             android:title="@string/prefersmbv1"/>
@@ -138,7 +138,9 @@
                 android:title="@string/browser_quick_play_default"/>
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="@string/developer_prefs_category">
+    <PreferenceCategory
+            android:key="xr_restricted_developer_settings"
+            android:title="@string/developer_prefs_category">
         <CheckBoxPreference
                 app:singleLineTitle="false"
                 android:defaultValue="true"

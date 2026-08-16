@@ -728,4 +728,18 @@
         <item>@string/report_a_crash</item>
     </string-array>
 
+    <string-array name="xr_controller_action_entries">
+        <item>@string/xr_action_none</item>
+        <item>@string/xr_action_toggle_2x_speed</item>
+        <item>@string/xr_action_toggle_subtitle</item>
+        <item>@string/xr_action_reset_screen_transform</item>
+    </string-array>
+
+    <string-array name="xr_controller_action_values" translatable="false">
+        <item>none</item>
+        <item>toggle_2x_speed</item>
+        <item>toggle_subtitle</item>
+        <item>reset_screen_transform</item>
+    </string-array>
+
 </resources>

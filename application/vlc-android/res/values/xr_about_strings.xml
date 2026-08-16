@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="xr_about_description">XRVLC for PICO is an open-source immersive media player for PICO headsets, built on VLC. It supports local files and network streams, VR video playback, subtitles, and immersive viewing controls.</string>
+    <string name="xr_about_xrvlc_section">XRVLC</string>
+    <string name="xr_about_vlc_section" translatable="false">VLC</string>
+    <string name="xr_repository_xr_vlc" translatable="false">xr_vlc</string>
+    <string name="xr_repository_vlc_android" translatable="false">vlc_android_for_xr_vlc</string>
+    <string name="xr_repository_libvlcjni" translatable="false">libvlcjni_for_xr_vlc</string>
+    <string name="xr_repository_vlc" translatable="false">vlc_for_xr_vlc</string>
+    <string name="xr_repository_xr_vlc_url" translatable="false">https://github.com/ijkm1234/xr_vlc</string>
+    <string name="xr_repository_vlc_android_url" translatable="false">https://github.com/ijkm1234/vlc_android_for_xr_vlc</string>
+    <string name="xr_repository_libvlcjni_url" translatable="false">https://github.com/ijkm1234/libvlcjni_for_xr_vlc</string>
+    <string name="xr_repository_vlc_url" translatable="false">https://github.com/ijkm1234/vlc_for_xr_vlc</string>
+    <string name="xr_vlc_source_code_url" translatable="false">https://code.videolan.org/videolan/vlc-android</string>
+    <string name="xr_vlc_license">VLC license</string>
+    <string name="xr_third_party_libraries">Third-party libraries</string>
+    <string name="xr_about_license_statement">Copyright © 2026 ijkm1234. Original XRVLC for PICO source modifications are released under GNU GPL v2 or later. VLC for Android, VLC, libVLC, and other bundled components retain their respective copyright notices and license terms.</string>
+    <string name="xr_about_disclaimer">XRVLC for PICO is an independent open-source project. It is not affiliated with, sponsored by, or endorsed by VideoLAN. VLC, VLC media player, and the VLC cone logo are trademarks of VideoLAN.</string>
+</resources>

@@ -31,11 +31,14 @@ import android.content.ContextWrapper
 import android.content.res.Resources
 import org.videolan.tools.wrap
 import java.lang.reflect.InvocationTargetException
+import java.lang.ref.WeakReference
 
 object AppContextProvider {
 
     private lateinit var context: Context
     var currentActivity: Activity? = null
+    // 维护一个弱引用列表，记录当前进程中仍存活的 Activity。
+    val aliveActivities = java.util.Collections.synchronizedList(java.util.ArrayList<WeakReference<Activity>>())
 
 
     // Property to get the new locale only on restart to prevent change the locale partially on runtime

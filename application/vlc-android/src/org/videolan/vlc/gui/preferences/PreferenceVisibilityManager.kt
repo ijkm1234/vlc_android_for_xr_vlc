@@ -38,9 +38,12 @@ import org.videolan.tools.KEY_APP_THEME
 import org.videolan.tools.KEY_AUDIO_DIGITAL_OUTPUT
 import org.videolan.tools.KEY_AUDIO_RESUME_CARD
 import org.videolan.tools.KEY_AUDIO_TASK_REMOVED
+import org.videolan.tools.KEY_CUSTOM_LIBVLC_OPTIONS
 import org.videolan.tools.KEY_ENABLE_CLONE_MODE
 import org.videolan.tools.KEY_ENABLE_HEADSET_DETECTION
 import org.videolan.tools.KEY_ENABLE_PLAY_ON_HEADSET_INSERTION
+import org.videolan.tools.KEY_ENABLE_VERBOSE_MODE
+import org.videolan.tools.KEY_HARDWARE_ACCELERATION
 import org.videolan.tools.KEY_IGNORE_HEADSET_MEDIA_BUTTON_PRESSES
 import org.videolan.tools.KEY_QUICK_PLAY
 import org.videolan.tools.KEY_QUICK_PLAY_DEFAULT
@@ -52,12 +55,12 @@ import org.videolan.tools.LOCKSCREEN_COVER
 import org.videolan.tools.PLAYLIST_MODE_AUDIO
 import org.videolan.tools.PLAYLIST_MODE_VIDEO
 import org.videolan.tools.POPUP_FORCE_LEGACY
+import org.videolan.tools.PREF_TV_UI
 import org.videolan.tools.RESUME_PLAYBACK
 import org.videolan.tools.SAVE_BRIGHTNESS
 import org.videolan.tools.SCREEN_ORIENTATION
 import org.videolan.tools.SHOW_SEEK_IN_COMPACT_NOTIFICATION
 import org.videolan.tools.TV_FOLDERS_FIRST
-import org.videolan.vlc.BuildConfig
 import org.videolan.vlc.VlcMigrationHelper
 import org.videolan.vlc.gui.preferences.PreferenceVisibilityManager.isPreferenceVisible
 import org.videolan.vlc.util.FeatureFlag
@@ -72,22 +75,24 @@ object PreferenceVisibilityManager {
      * @param forTv true it has been called from the TV UI
      */
     fun isPreferenceVisible(key:String?, sharedPreferences: SharedPreferences, forTv: Boolean = false) = when (key) {
+        // Hidden in the XR AAR settings UI.
+        "xr_restricted_video_settings", KEY_VIDEO_APP_SWITCH, KEY_HARDWARE_ACCELERATION, SCREEN_ORIENTATION,
+        PREF_TV_UI,
+        "remote_access_category",
+        "xr_restricted_developer_settings", KEY_ENABLE_VERBOSE_MODE, "debug_logs", "nightly_install", KEY_SHOW_UPDATE, KEY_CUSTOM_LIBVLC_OPTIONS -> false
         //hidden on TV
         KEY_QUICK_PLAY_DEFAULT, KEY_QUICK_PLAY, "secondary_display_category", "secondary_display_category_summary", KEY_ENABLE_CLONE_MODE, SAVE_BRIGHTNESS,
         KEY_APP_THEME, LIST_TITLE_ELLIPSIZE, KEY_ENABLE_HEADSET_DETECTION, KEY_ENABLE_PLAY_ON_HEADSET_INSERTION, KEY_IGNORE_HEADSET_MEDIA_BUTTON_PRESSES,
         "headset_prefs_category", KEY_AUDIO_RESUME_CARD, LOCKSCREEN_COVER, SHOW_SEEK_IN_COMPACT_NOTIFICATION,
-        KEY_AUDIO_TASK_REMOVED, "casting_category", "android_auto_category", SCREEN_ORIENTATION, -> !forTv
+        KEY_AUDIO_TASK_REMOVED, "casting_category", "android_auto_category" -> !forTv
         //only on TV
         TV_FOLDERS_FIRST, BROWSER_SHOW_HIDDEN_FILES, PLAYLIST_MODE_VIDEO, PLAYLIST_MODE_AUDIO, KEY_REMOTE_ACCESS_INFO -> forTv
-        KEY_SHOW_UPDATE -> !forTv && BuildConfig.DEBUG
-        KEY_VIDEO_APP_SWITCH -> !forTv || AndroidDevices.hasPiP
         AUDIO_DUCKING -> !AndroidUtil.isOOrLater
         POPUP_FORCE_LEGACY -> AndroidDevices.pipAllowed
         RESUME_PLAYBACK -> AndroidDevices.isPhone && !forTv
         KEY_AOUT -> VlcMigrationHelper.getAudioOutputFromDevice() == VlcMigrationHelper.AudioOutput.ALL
         KEY_AUDIO_DIGITAL_OUTPUT -> sharedPreferences.getString(KEY_AOUT, "0") != "2"
         "optional_features" -> FeatureFlag.entries.isNotEmpty()
-        "remote_access_category" -> Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1
         "permissions_title" -> Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1
         else -> true
     }

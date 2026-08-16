@@ -13,6 +13,7 @@ import android.view.KeyEvent
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.view.ViewConfiguration
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -37,6 +38,7 @@ import org.videolan.tools.Settings
 import org.videolan.tools.getContextWithLocale
 import org.videolan.tools.setGone
 import org.videolan.vlc.R
+import org.videolan.vlc.bridge.PlaybackServiceBridge
 import org.videolan.vlc.gui.helpers.UiTools
 import org.videolan.vlc.gui.helpers.applyTheme
 import org.videolan.vlc.gui.helpers.hf.PinCodeDelegate
@@ -48,9 +50,14 @@ import org.videolan.vlc.util.RemoteAccessUtils
 import org.videolan.vlc.viewmodels.DisplaySettingsViewModel
 
 
+private const val TAG = "VLC/BaseActivity"
+private const val PICO_RIGHT_CONTROLLER_HOME_SCAN_CODE = 714
+
 abstract class BaseActivity : AppCompatActivity() {
 
     private var startColor: Int = 0
+    private var picoHomeDownTime = 0L
+    private var picoHomeLongPressDetected = false
     lateinit var settings: SharedPreferences
     private var lastDisplayedOTPCode = ""
     var windowLayoutInfo: WindowLayoutInfo? = null
@@ -212,6 +219,60 @@ abstract class BaseActivity : AppCompatActivity() {
 
     override fun getApplicationContext(): Context {
         return super.getApplicationContext().getContextWithLocale(AppContextProvider.locale)
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        val isPicoHome = event.scanCode == PICO_RIGHT_CONTROLLER_HOME_SCAN_CODE ||
+                KeyEvent.keyCodeToString(event.keyCode) == "KEYCODE_RCONTROLLER_HOME"
+
+        if (!isPicoHome) return super.dispatchKeyEvent(event)
+
+        // Let the current view process the event first, but always report it as
+        // unconsumed so PICO SystemExt can continue opening the Home panel.
+        val baseHandled = super.dispatchKeyEvent(event)
+        val longPressTimeout = ViewConfiguration.getLongPressTimeout().toLong()
+
+        if (event.action == KeyEvent.ACTION_DOWN) {
+            if (event.repeatCount == 0) {
+                picoHomeDownTime = event.downTime
+                picoHomeLongPressDetected = false
+            } else if ((event.flags and KeyEvent.FLAG_LONG_PRESS) != 0 ||
+                    event.eventTime - event.downTime >= longPressTimeout) {
+                picoHomeLongPressDetected = true
+            }
+            return false
+        }
+
+        if (event.action != KeyEvent.ACTION_UP) return false
+
+        val downTime = if (picoHomeDownTime > 0L) picoHomeDownTime else event.downTime
+        val pressDuration = (event.eventTime - downTime).coerceAtLeast(0L)
+        val isLongPress = picoHomeLongPressDetected || pressDuration >= longPressTimeout
+        picoHomeDownTime = 0L
+        picoHomeLongPressDetected = false
+
+        if (event.isCanceled || isLongPress) {
+            android.util.Log.i(
+                    TAG,
+                    "PICO Home release ignored; activity=${javaClass.simpleName} " +
+                            "canceled=${event.isCanceled} longPress=$isLongPress " +
+                            "durationMs=$pressDuration baseHandled=$baseHandled"
+            )
+            return false
+        }
+
+        PlaybackServiceBridge.markVlcTemporarilyHiddenForSystemPanel()
+        val moved = moveTaskToBack(true)
+        if (!moved) PlaybackServiceBridge.cancelVlcRestoreAfterSystemPanel()
+
+        android.util.Log.i(
+                TAG,
+                "PICO Home short press released while VLC visible; " +
+                        "activity=${javaClass.simpleName} moveTaskToBack=$moved " +
+                        "baseHandled=$baseHandled key=${KeyEvent.keyCodeToString(event.keyCode)} " +
+                        "scanCode=${event.scanCode} durationMs=$pressDuration"
+        )
+        return false
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {

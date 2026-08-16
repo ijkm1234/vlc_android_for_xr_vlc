@@ -78,18 +78,40 @@ private const val ONE_SECOND = 1000L
 internal class MediaSessionCallback(private val playbackService: PlaybackService) : MediaSessionCompat.Callback() {
     private var prevActionSeek = false
 
+    private fun describePlaybackState(): String {
+        val media = playbackService.currentMediaWrapper
+        return "hasMedia=${playbackService.hasMedia()} isPlaying=${playbackService.isPlaying} " +
+                "isPaused=${playbackService.isPaused} time=${playbackService.getTime()} " +
+                "length=${playbackService.length} rate=${playbackService.rate} " +
+                "currentIndex=${playbackService.currentMediaPosition} currentUri=${media?.uri}"
+    }
+
     override fun onPlay() {
-        if (playbackService.hasMedia()) playbackService.play()
-        else if (!AndroidDevices.isAndroidTv) PlaybackService.loadLastAudio(playbackService)
+        Log.e("XR_CONTROL", "MediaSessionCallback.onPlay enter ${describePlaybackState()}")
+        if (playbackService.hasMedia()) {
+            Log.e("XR_CONTROL", "MediaSessionCallback.onPlay route=play ${describePlaybackState()}")
+            playbackService.play()
+        } else if (!AndroidDevices.isAndroidTv) {
+            Log.e("XR_CONTROL", "MediaSessionCallback.onPlay route=loadLastAudio ${describePlaybackState()}")
+            PlaybackService.loadLastAudio(playbackService)
+        } else {
+            Log.e("XR_CONTROL", "MediaSessionCallback.onPlay skipped androidTvNoMedia ${describePlaybackState()}")
+        }
+        Log.e("XR_CONTROL", "MediaSessionCallback.onPlay exit ${describePlaybackState()}")
     }
 
     override fun onMediaButtonEvent(mediaButtonEvent: Intent): Boolean {
-        val keyEvent = mediaButtonEvent.parcelable(Intent.EXTRA_KEY_EVENT) as KeyEvent? ?: return false
+        val keyEvent = mediaButtonEvent.parcelable(Intent.EXTRA_KEY_EVENT) as KeyEvent? ?: run {
+            Log.e("XR_CONTROL", "MediaSessionCallback.onMediaButtonEvent missing_key_event ${describePlaybackState()}")
+            return false
+        }
+        Log.e("XR_CONTROL", "MediaSessionCallback.onMediaButtonEvent enter action=${keyEvent.action} key=${KeyEvent.keyCodeToString(keyEvent.keyCode)} repeat=${keyEvent.repeatCount} flags=${keyEvent.flags} longPress=${keyEvent.isLongPress} ${describePlaybackState()}")
 
         if (playbackService.detectHeadset &&
             playbackService.settings.getBoolean(KEY_IGNORE_HEADSET_MEDIA_BUTTON_PRESSES, false)) {
             // Wired headset
             if (playbackService.headsetInserted && isWiredHeadsetHardKey(keyEvent)) {
+                Log.e("XR_CONTROL", "MediaSessionCallback.onMediaButtonEvent ignored wired_headset key=${KeyEvent.keyCodeToString(keyEvent.keyCode)} ${describePlaybackState()}")
                 return true
             }
 
@@ -98,6 +120,7 @@ internal class MediaSessionCallback(private val playbackService: PlaybackService
                 BluetoothAdapter.getDefaultAdapter()?.let { bluetoothAdapter ->
                     if (BluetoothAdapter.STATE_CONNECTED == bluetoothAdapter.getProfileConnectionState(BluetoothProfile.HEADSET)
                         && isBluetoothHeadsetHardKey(keyEvent)) {
+                        Log.e("XR_CONTROL", "MediaSessionCallback.onMediaButtonEvent ignored bluetooth_headset key=${KeyEvent.keyCodeToString(keyEvent.keyCode)} ${describePlaybackState()}")
                         return true
                     }
                 }
@@ -107,9 +130,13 @@ internal class MediaSessionCallback(private val playbackService: PlaybackService
         if (!playbackService.hasMedia()
                 && (keyEvent.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY || keyEvent.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)) {
             return if (keyEvent.action == KeyEvent.ACTION_DOWN) {
+                Log.e("XR_CONTROL", "MediaSessionCallback.onMediaButtonEvent route=loadLastAudio key=${KeyEvent.keyCodeToString(keyEvent.keyCode)} ${describePlaybackState()}")
                 PlaybackService.loadLastAudio(playbackService)
                 true
-            } else false
+            } else {
+                Log.e("XR_CONTROL", "MediaSessionCallback.onMediaButtonEvent skipped keyUpNoMedia key=${KeyEvent.keyCodeToString(keyEvent.keyCode)} ${describePlaybackState()}")
+                false
+            }
         }
         /**
          * Implement fast forward and rewind behavior by directly handling the previous and next button events.
@@ -120,6 +147,7 @@ internal class MediaSessionCallback(private val playbackService: PlaybackService
          * action is bypassed if the flag is set. The prevActionSeek flag is reset to false for the next invocation.
          */
         if (isAndroidAutoHardKey(keyEvent) && (keyEvent.keyCode == KeyEvent.KEYCODE_MEDIA_PREVIOUS || keyEvent.keyCode == KeyEvent.KEYCODE_MEDIA_NEXT)) {
+            Log.e("XR_CONTROL", "MediaSessionCallback.onMediaButtonEvent route=androidAutoHardKey action=${keyEvent.action} key=${KeyEvent.keyCodeToString(keyEvent.keyCode)} ${describePlaybackState()}")
             when (keyEvent.action) {
                 KeyEvent.ACTION_DOWN -> {
                     if (playbackService.isSeekable && keyEvent.isLongPress) {
@@ -142,7 +170,9 @@ internal class MediaSessionCallback(private val playbackService: PlaybackService
             }
             return true
         }
-        return super.onMediaButtonEvent(mediaButtonEvent)
+        val handled = super.onMediaButtonEvent(mediaButtonEvent)
+        Log.e("XR_CONTROL", "MediaSessionCallback.onMediaButtonEvent route=super handled=$handled key=${KeyEvent.keyCodeToString(keyEvent.keyCode)} ${describePlaybackState()}")
+        return handled
     }
 
     private fun jumpToTimelineEntry(previous: Boolean) {
@@ -270,6 +300,7 @@ internal class MediaSessionCallback(private val playbackService: PlaybackService
     }
 
     override fun onPlayFromMediaId(mediaId: String, extras: Bundle?) {
+        Log.e("XR_CONTROL", "MediaSessionCallback.onPlayFromMediaId enter mediaId=$mediaId extras=$extras ${describePlaybackState()}")
         playbackService.lifecycleScope.launch {
             val context = playbackService.applicationContext
             try {
@@ -355,6 +386,7 @@ internal class MediaSessionCallback(private val playbackService: PlaybackService
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Could not play media: $mediaId", e)
+                Log.e("XR_CONTROL", "MediaSessionCallback.onPlayFromMediaId fallback mediaId=$mediaId ${describePlaybackState()}", e)
                 when {
                     playbackService.hasMedia() -> playbackService.play()
                     else -> playbackService.displayPlaybackError(R.string.search_no_result)
@@ -364,6 +396,7 @@ internal class MediaSessionCallback(private val playbackService: PlaybackService
     }
 
     private fun loadMedia(mediaList: List<MediaWrapper>?, position: Int = 0, allowRandom: Boolean = false) {
+        Log.e("XR_CONTROL", "MediaSessionCallback.loadMedia enter size=${mediaList?.size ?: -1} position=$position allowRandom=$allowRandom ${describePlaybackState()}")
         mediaList?.let {
             if (playbackService.isCarMode())
                 mediaList.forEach { mw -> mw.addFlags(MediaWrapper.MEDIA_FORCE_AUDIO) }
@@ -373,8 +406,10 @@ internal class MediaSessionCallback(private val playbackService: PlaybackService
     }
 
     private fun seek(position: Long) {
+        Log.e("XR_CONTROL", "MediaSessionCallback.seek enter position=$position ${describePlaybackState()}")
         playbackService.seek(position, fromUser = true)
         playbackService.playlistManager.player.updateProgress(position)
+        Log.e("XR_CONTROL", "MediaSessionCallback.seek exit position=$position ${describePlaybackState()}")
     }
 
     private fun checkForSeekFailure(forward: Boolean) {
@@ -384,9 +419,13 @@ internal class MediaSessionCallback(private val playbackService: PlaybackService
         }
     }
 
-    override fun onPlayFromUri(uri: Uri?, extras: Bundle?) = playbackService.loadUri(uri)
+    override fun onPlayFromUri(uri: Uri?, extras: Bundle?) {
+        Log.e("XR_CONTROL", "MediaSessionCallback.onPlayFromUri uri=$uri extras=$extras ${describePlaybackState()}")
+        playbackService.loadUri(uri)
+    }
 
     override fun onPlayFromSearch(query: String?, extras: Bundle?) {
+        Log.e("XR_CONTROL", "MediaSessionCallback.onPlayFromSearch enter query=$query extras=$extras ${describePlaybackState()}")
         val playbackState = PlaybackStateCompat.Builder()
                 .setActions(playbackService.enabledActions.getCapabilities())
                 .setState(PlaybackStateCompat.STATE_CONNECTING, playbackService.getTime(), playbackService.speed)
@@ -445,21 +484,40 @@ internal class MediaSessionCallback(private val playbackService: PlaybackService
         playbackService.repeatType = repeatMode
     }
 
-    override fun onPause() = playbackService.pause()
-
-    override fun onStop() = playbackService.stop()
-
-    override fun onSkipToNext() = when {
-        playbackService.isPodcastMode -> jumpToTimelineEntry(false)
-        else -> playbackService.next()
+    override fun onPause() {
+        Log.e("XR_CONTROL", "MediaSessionCallback.onPause enter ${describePlaybackState()}")
+        playbackService.pause()
+        Log.e("XR_CONTROL", "MediaSessionCallback.onPause exit ${describePlaybackState()}")
     }
 
-    override fun onSkipToPrevious() = when {
-        playbackService.isPodcastMode -> jumpToTimelineEntry(true)
-        else -> playbackService.previous(false)
+    override fun onStop() {
+        Log.e("XR_CONTROL", "MediaSessionCallback.onStop enter ${describePlaybackState()}")
+        playbackService.stop()
+        Log.e("XR_CONTROL", "MediaSessionCallback.onStop exit ${describePlaybackState()}")
     }
 
-    override fun onSeekTo(pos: Long) = seek(if (pos < 0) playbackService.getTime() + pos else pos)
+    override fun onSkipToNext() {
+        Log.e("XR_CONTROL", "MediaSessionCallback.onSkipToNext enter ${describePlaybackState()}")
+        when {
+            playbackService.isPodcastMode -> jumpToTimelineEntry(false)
+            else -> playbackService.next()
+        }
+        Log.e("XR_CONTROL", "MediaSessionCallback.onSkipToNext exit ${describePlaybackState()}")
+    }
+
+    override fun onSkipToPrevious() {
+        Log.e("XR_CONTROL", "MediaSessionCallback.onSkipToPrevious enter ${describePlaybackState()}")
+        when {
+            playbackService.isPodcastMode -> jumpToTimelineEntry(true)
+            else -> playbackService.previous(false)
+        }
+        Log.e("XR_CONTROL", "MediaSessionCallback.onSkipToPrevious exit ${describePlaybackState()}")
+    }
+
+    override fun onSeekTo(pos: Long) {
+        Log.e("XR_CONTROL", "MediaSessionCallback.onSeekTo requested=$pos ${describePlaybackState()}")
+        seek(if (pos < 0) playbackService.getTime() + pos else pos)
+    }
 
     override fun onFastForward() {
         seek((playbackService.getTime() + Settings.audioJumpDelay * ONE_SECOND).coerceAtMost(playbackService.length))
@@ -471,7 +529,10 @@ internal class MediaSessionCallback(private val playbackService: PlaybackService
         checkForSeekFailure(forward = false)
     }
 
-    override fun onSkipToQueueItem(id: Long) = playbackService.playIndexOrLoadLastPlaylist(id.toInt())
+    override fun onSkipToQueueItem(id: Long) {
+        Log.e("XR_CONTROL", "MediaSessionCallback.onSkipToQueueItem id=$id ${describePlaybackState()}")
+        playbackService.playIndexOrLoadLastPlaylist(id.toInt())
+    }
 
     override fun onSetPlaybackSpeed(speed: Float) = playbackService.setRate(speed.coerceIn(0.5f, 2.0f), false)
 

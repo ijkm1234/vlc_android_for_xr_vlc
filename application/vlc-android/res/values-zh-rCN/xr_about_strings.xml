@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="xr_about_description">XRVLC for PICO 是一款基于 VLC for Android 开发的免费开源媒体播放器，延续了其出色的播放体验，提供强大的媒体库管理、完善的网络流媒体支持等丰富功能</string>
+    <string name="xr_about_xrvlc_section">XRVLC</string>
+    <string name="xr_vlc_license">VLC 许可证</string>
+    <string name="xr_third_party_libraries">第三方库</string>
+    <string name="xr_about_license_statement">Copyright © 2026 ijkm1234。XRVLC for PICO 的原创源码修改以 GNU GPL v2 或更高版本发布。VLC for Android、VLC、libVLC 及其他随附组件保留各自的版权声明和许可条款。</string>
+    <string name="xr_about_disclaimer">XRVLC for PICO 是独立的开源项目，与 VideoLAN 无隶属、赞助或合作关系，未经 VideoLAN 背书。VLC、VLC media player 及 VLC 圆锥图标是 VideoLAN 的商标。</string>
+</resources>

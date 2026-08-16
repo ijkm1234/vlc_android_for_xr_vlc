@@ -97,8 +97,10 @@ class NetworkServerDialog : VLCBottomSheetDialogFragment(), AdapterView.OnItemSe
         if (::networkUri.isInitialized) {
             ignoreFirstSpinnerCb = true
             editAddress.setText(networkUri.host)
-            if (!networkUri.userInfo.isNullOrEmpty())
-                editUsername.editText!!.setText(networkUri.userInfo)
+            if (!networkUri.userInfo.isNullOrEmpty()) {
+                val parts = networkUri.userInfo!!.split(":", limit = 2)
+                editUsername.editText!!.setText(parts[0])
+            }
             if (!networkUri.path.isNullOrEmpty())
                 editFolder.setText(networkUri.path)
             if (!networkName.isEmpty())
@@ -128,6 +130,7 @@ class NetworkServerDialog : VLCBottomSheetDialogFragment(), AdapterView.OnItemSe
             editAddress.text.toString()
         else
             editServername.text.toString()
+
         val uri = url.text.toString().toUri()
         AppScope.launch {
             if (::networkUri.isInitialized) browserFavRepository.deleteBrowserFav(networkUri)
@@ -140,9 +143,16 @@ class NetworkServerDialog : VLCBottomSheetDialogFragment(), AdapterView.OnItemSe
         val sb = StringBuilder()
         sb.append(spinnerProtocol.selectedItem.toString().lowercase(Locale.getDefault()))
                 .append("://")
-        if (editUsername.isEnabled && !editUsername.editText!!.text.isNullOrEmpty()) {
-            sb.append(editUsername.editText!!.text).append('@')
+
+        val hasUser = editUsername.isEnabled && !editUsername.editText!!.text.isNullOrEmpty()
+
+        if (hasUser) {
+            val user = editUsername.editText!!.text.toString()
+            val encodedUser = Uri.encode(user)
+            sb.append(encodedUser)
+            sb.append('@')
         }
+
         sb.append(editAddress.text)
         if (needPort()) {
             sb.append(':').append(editPort.text)

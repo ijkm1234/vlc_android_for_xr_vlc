@@ -1,6 +1,6 @@
 # VLC
 
-/libvlcjni
+/libvlcjni/
 /vlc/
 /toolchains/
 application/app/src/main/assets/
@@ -64,6 +64,7 @@ captures/
 gradlew.bat
 gradlew
 gradle*/
+/gradle-*-bin.zip
 .gradle/
 build/
 vlc-android/build/
