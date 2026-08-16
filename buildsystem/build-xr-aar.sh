@@ -5,7 +5,24 @@ set -euo pipefail
 
 vlc_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 local_properties="$vlc_root/local.properties"
-aar_path="$vlc_root/application/vlc-android/build/outputs/aar/vlc-android-debug.aar"
+aar_variant="${VLC_ANDROID_AAR_VARIANT:-debug}"
+
+case "$aar_variant" in
+    debug)
+        compile_variant_args=()
+        gradle_task="assembleDebug"
+        ;;
+    release)
+        compile_variant_args=(--release)
+        gradle_task="assembleRelease"
+        ;;
+    *)
+        echo "Unsupported VLC_ANDROID_AAR_VARIANT: $aar_variant (expected debug or release)" >&2
+        exit 2
+        ;;
+esac
+
+aar_path="$vlc_root/application/vlc-android/build/outputs/aar/vlc-android-$aar_variant.aar"
 
 read_property() {
     sed -n "s/^$1=//p" "$local_properties" | head -n 1
@@ -42,12 +59,12 @@ cd "$vlc_root"
 
 # Missing pinned sources are downloaded once by compile.sh. Existing Git
 # checkouts, contrib tarballs, and native build outputs are reused.
-./buildsystem/compile.sh -a arm64-v8a -l
+./buildsystem/compile.sh -a arm64-v8a -l "${compile_variant_args[@]}"
 
 GRADLE_ABI=arm64-v8a ./gradlew \
     -PxrFatAar=true \
     :application:vlc-android:clean \
-    :application:vlc-android:assembleDebug
+    ":application:vlc-android:$gradle_task"
 
 if [[ ! -f "$aar_path" ]]; then
     echo "AAR output was not generated at $aar_path" >&2
