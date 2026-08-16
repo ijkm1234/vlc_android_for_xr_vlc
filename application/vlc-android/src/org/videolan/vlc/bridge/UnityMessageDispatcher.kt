@@ -1,3 +1,8 @@
+/*
+ * Copyright © 2026 XRVLC contributors
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
 package org.videolan.vlc.bridge
 
 import android.util.Log

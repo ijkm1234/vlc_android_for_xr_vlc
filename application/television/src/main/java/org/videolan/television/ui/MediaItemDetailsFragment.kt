@@ -2,6 +2,7 @@
  * MediaItemDetailsFragment.java
  *
  * Copyright © 2014-2019 VLC authors, VideoLAN and VideoLabs
+ * Modified for XRVLC by XRVLC contributors on 2026-08-16.
  * Author: Geoffrey Métais
  *
  * This program is free software; you can redistribute it and/or modify

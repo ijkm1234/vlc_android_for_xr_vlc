@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright © 2026 XRVLC contributors. SPDX-License-Identifier: GPL-2.0-or-later -->
 <resources>
     <string name="xr_about_description">XRVLC for PICO is an open-source immersive media player for PICO headsets, built on VLC. It supports local files and network streams, VR video playback, subtitles, and immersive viewing controls.</string>
     <string name="xr_about_xrvlc_section">XRVLC</string>

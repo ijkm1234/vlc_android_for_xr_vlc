@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright © 2026 XRVLC contributors. SPDX-License-Identifier: GPL-2.0-or-later -->
 <resources>
     <style name="Theme.VLC.Start.Transparent.NoUI" parent="Theme.VLC.Transparent.NoUI">
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_iconpark_loading_four</item>

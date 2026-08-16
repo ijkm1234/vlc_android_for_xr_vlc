@@ -3,6 +3,7 @@
  *  Util.java
  * **************************************************************************
  *  Copyright © 2015 VLC authors and VideoLAN
+ * Modified for XRVLC by XRVLC contributors on 2026-08-16.
  *  Author: Geoffrey Métais
  *
  *  This program is free software; you can redistribute it and/or modify

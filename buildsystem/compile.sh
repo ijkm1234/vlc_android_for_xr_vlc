@@ -1,4 +1,5 @@
 #! /bin/sh
+# Modified for XRVLC by XRVLC contributors on 2026-08-16.
 set -e
 
 

@@ -1,3 +1,5 @@
+// Modified for XRVLC by XRVLC contributors on 2026-08-16.
+
 package org.videolan.resources.util
 
 import android.Manifest

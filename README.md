@@ -1,6 +1,14 @@
-# VLC for Android
+# VLC for Android — XRVLC fork
 
-This is the official **Android** port of [VLC](https://videolan.org/vlc/).
+This repository is an independent modified fork of the VideoLAN
+[VLC for Android](https://code.videolan.org/videolan/vlc-android) project. It
+is maintained for XRVLC and is not an official VideoLAN distribution. It is
+not affiliated with or endorsed by VideoLAN.
+
+The upstream source, base revision, XRVLC dependency revision, and change
+scope are documented in [UPSTREAM.md](UPSTREAM.md).
+
+This documentation was modified for XRVLC on 2026-08-16.
 
 VLC on Android plays all the same files as the classical version of VLC, and features a media database
 for Audio and Video files and stream.
@@ -45,16 +53,22 @@ And more.
 
 ![LibVLC stack](https://images.videolan.org/images/libvlc_stack.png)
 
-You can use our LibVLC module to power your own Android media player.
-Download the `.aar` directly from [Maven](https://search.maven.org/artifact/org.videolan.android/libvlc-all) or build from source.
+The upstream LibVLC module can be used to power Android media players. The
+XRVLC variant in this repository is built from source.
 
-Have a look at our [sample codes](https://code.videolan.org/videolan/libvlc-android-samples).
+See the upstream
+[LibVLC Android samples](https://code.videolan.org/videolan/libvlc-android-samples).
 
 ## License
 
-VLC for Android is licensed under [GPLv2 (or later)](COPYING). Android libraries make this, de facto, a GPLv3 application.
+VLC for Android application code is licensed under
+[GPL-2.0-or-later](COPYING). Android libraries make the assembled application,
+de facto, a GPLv3 application. Individual bundled components retain their own
+licenses.
 
-VLC engine *(LibVLC)* for Android is licensed under [LGPLv2](libvlc/COPYING.LIB).
+The XRVLC libvlcjni and LibVLC components are licensed under
+[LGPL-2.1-or-later](https://github.com/ijkm1234/libvlcjni_for_xr_vlc/blob/v0.0.1/libvlc/COPYING.LIB),
+except where an individual file states otherwise.
 
 ## Build
 
@@ -79,7 +93,9 @@ It should work with Windows 10, and macOS, but there is no official support for 
 
 #### Setup
 
-Check our [AndroidCompile wiki page](https://wiki.videolan.org/AndroidCompile/), especially for build dependencies.
+See the upstream
+[AndroidCompile wiki page](https://wiki.videolan.org/AndroidCompile/), especially
+for build dependencies.
 
 Here are the essential points:
 
@@ -113,18 +129,14 @@ Build Medialibrary with `-ml` instead of `-l`
 
 ## Contribute
 
-VLC is a libre and open source project, we welcome all contributions.
-
-Just respect our [Code of Conduct](https://wiki.videolan.org/CoC/), and if you want do contribute to the UI or add a new feature, please open an issue first so there can be a discussion about it.
+VLC for Android and this XRVLC fork are libre and open source software.
 
 
 ### Pull requests
 
-Pull requests must be proposed on our [gitlab server](https://code.videolan.org/videolan/vlc-android/).
-
-So you must create an account, fork vlc-android project, and propose your merge requests from it.
-
-**Except for translations**, see the section below.
+XRVLC-specific changes should be proposed to this repository. Changes intended
+for upstream VLC for Android should be proposed to the
+[VideoLAN repository](https://code.videolan.org/videolan/vlc-android/).
 
 ### Translations
 
@@ -134,17 +146,12 @@ Translations merge requests are then generated from transifex work.
 
 ## Issues and feature requests
 
-VLC for Android bugtracker is hosted on [VideoLAN gitlab](https://code.videolan.org/videolan/vlc-android/issues)  
-Please look for existing issues and provide as much useful details as you can (e.g. vlc app version, device and Android version).
-
-A template is provided, please use it!
-
-Issues without relevant information will be ignored, we cannot help in this case.
+Report XRVLC-specific issues in this repository. The
+[VideoLAN VLC for Android bugtracker](https://code.videolan.org/videolan/vlc-android/issues)
+is for the upstream project.
 
 ## Support
 
 - For usage support, use the in-app feedback option in the `About` screen
-- Android mailing list: android@videolan.org
-- bugtracker: https://code.videolan.org/videolan/vlc-android/issues
-- IRC: *#videolan* channel on [libera](https://libera.chat/)
-- VideoLAN forum: https://forum.videolan.org/viewforum.php?f=35
+- XRVLC source and issues: https://github.com/ijkm1234/vlc_android_for_xr_vlc
+- Upstream source: https://code.videolan.org/videolan/vlc-android

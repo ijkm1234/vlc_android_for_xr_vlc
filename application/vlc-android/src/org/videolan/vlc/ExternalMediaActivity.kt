@@ -6,6 +6,9 @@
  *  Thin XR entry point for media opened from Android file managers/choosers.
  *  It forwards the original ACTION_VIEW intent to Unity and never plays media
  *  in the native VLC UI.
+ *
+ *  Copyright © 2026 XRVLC contributors
+ *  SPDX-License-Identifier: GPL-2.0-or-later
  *  ***************************************************************************
  */
 

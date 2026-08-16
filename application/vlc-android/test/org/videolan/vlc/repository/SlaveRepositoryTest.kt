@@ -2,6 +2,7 @@
  *  SlaveRepositoryTest.kt
  * ****************************************************************************
  * Copyright © 2018 VLC authors and VideoLAN
+ * Modified for XRVLC by XRVLC contributors on 2026-08-16.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
