@@ -1,9 +1,18 @@
+// Modified for XRVLC by XRVLC contributors on 2026-08-16.
+
 plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
     id 'kotlin-kapt'
     id 'com.google.devtools.ksp'
     id 'kotlin-parcelize'
+}
+
+apply plugin: 'com.kezong.fat-aar'
+
+fataar {
+    transitive = true
+    keepR8Verify = false
 }
 
 def build_revision = providers.exec {
@@ -105,11 +114,15 @@ android {
         assets.srcDirs = ['assets']
     }
     sourceSets.debug {
-        res.srcDirs = ['flavors/debug/res']
+        if (!project.hasProperty('xrFatAar')) {
+            res.srcDirs = ['flavors/debug/res']
+        }
         assets.srcDirs = ['flavors/debug/assets']
     }
     sourceSets.dev {
-        res.srcDirs = ['flavors/debug/res']
+        if (!project.hasProperty('xrFatAar')) {
+            res.srcDirs = ['flavors/debug/res']
+        }
         assets.srcDirs = ['flavors/debug/assets']
     }
     sourceSets.test {
@@ -156,16 +169,23 @@ task generateSources(type: Jar) {
 dependencies {
     devApi project(':libvlcjni:libvlc')
     devApi project(':medialibrary')
-    debugApi "org.videolan.android:libvlc-all:$rootProject.ext.libvlcVersion"
+    debugApi project(':libvlcjni:libvlc')
     debugApi "org.videolan.android:medialibrary-all:$rootProject.ext.medialibraryVersion"
     releaseApi "org.videolan.android:libvlc-all:$rootProject.ext.libvlcVersion"
     releaseApi "org.videolan.android:medialibrary-all:$rootProject.ext.medialibraryVersion"
     signedReleaseApi "org.videolan.android:libvlc-all:$rootProject.ext.libvlcVersion"
     signedReleaseApi "org.videolan.android:medialibrary-all:$rootProject.ext.medialibraryVersion"
-    api project(':application:tools')
-    api project(':application:resources')
-    api project(':application:mediadb')
-    api project(':application:live-plot-graph')
+    debugEmbed project(':libvlcjni:libvlc')
+    embed project(path: ':application:tools', configuration: 'default')
+    embed project(path: ':application:resources', configuration: 'default')
+    embed project(path: ':application:mediadb', configuration: 'default')
+    embed project(path: ':application:live-plot-graph', configuration: 'default')
+
+    // Add api as well so Kapt and KSP can find the classes
+    compileOnly project(':application:tools')
+    compileOnly project(':application:resources')
+    compileOnly project(':application:mediadb')
+    compileOnly project(':application:live-plot-graph')
 
 
     // AppCompat
@@ -199,6 +219,7 @@ dependencies {
     api "androidx.leanback:leanback:$rootProject.ext.androidxLeanbackVersion"
     api "androidx.leanback:leanback-preference:$rootProject.ext.androidxLeanbackVersion"
     api "androidx.tvprovider:tvprovider:$rootProject.ext.androidxLeanbackVersion"
+    api "androidx.preference:preference:$rootProject.ext.androidxPreferencesVersion"
 
     // Kotlin
     api "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
@@ -238,7 +259,6 @@ dependencies {
     }
 
 }
-
 
 static def buildTime(project) {
     if (project.hasProperty('forceDeterministic')) {

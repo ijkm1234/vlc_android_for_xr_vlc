@@ -3,6 +3,7 @@
  *  Util.java
  * **************************************************************************
  *  Copyright © 2015 VLC authors and VideoLAN
+ * Modified for XRVLC by XRVLC contributors on 2026-08-16.
  *  Author: Geoffrey Métais
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -144,19 +145,16 @@ import org.videolan.tools.dp
 import org.videolan.tools.isStarted
 import org.videolan.tools.putSingle
 import org.videolan.tools.setGone
-import org.videolan.vlc.BuildConfig.VLC_VERSION_NAME
 import org.videolan.vlc.MediaParsingService
 import org.videolan.vlc.R
 import org.videolan.vlc.StartActivity
 import org.videolan.vlc.VlcMigrationHelper
 import org.videolan.vlc.gui.AuthorsActivity
 import org.videolan.vlc.gui.BaseActivity
-import org.videolan.vlc.gui.FeedbackActivity
 import org.videolan.vlc.gui.InfoActivity
 import org.videolan.vlc.gui.LibrariesActivity
 import org.videolan.vlc.gui.LibraryWithLicense
 import org.videolan.vlc.gui.browser.MediaBrowserFragment
-import org.videolan.vlc.gui.dialogs.AboutVersionDialog
 import org.videolan.vlc.gui.dialogs.AddToGroupDialog
 import org.videolan.vlc.gui.dialogs.LicenseDialog
 import org.videolan.vlc.gui.dialogs.SavePlaylistDialog
@@ -459,11 +457,58 @@ object UiTools {
      * Fill the about main view for mobile and TV
      */
     fun fillAboutView(activity: FragmentActivity, v: View) {
-        val builddate = v.context.getString(R.string.build_time)
+        val packageManager = activity.packageManager
+        val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            packageManager.getPackageInfo(activity.packageName, android.content.pm.PackageManager.PackageInfoFlags.of(0))
+        } else {
+            @Suppress("DEPRECATION")
+            packageManager.getPackageInfo(activity.packageName, 0)
+        }
+
+        v.findViewById<TextView>(R.id.about_app_name).text =
+            activity.applicationInfo.loadLabel(packageManager)
+
         val appVersion = v.findViewById<TextView>(R.id.app_version)
-        appVersion.text = VLC_VERSION_NAME
-        val appVersionDate = v.findViewById<TextView>(R.id.app_version_date)
-        appVersionDate.text = builddate
+        appVersion.text = packageInfo.versionName.orEmpty()
+
+        listOf(
+            R.id.about_xr_vlc_repository to R.string.xr_repository_xr_vlc_url,
+            R.id.about_vlc_android_repository to R.string.xr_repository_vlc_android_url,
+            R.id.about_libvlcjni_repository to R.string.xr_repository_libvlcjni_url,
+            R.id.about_vlc_repository to R.string.xr_repository_vlc_url
+        ).forEach { (viewId, urlId) ->
+            v.findViewById<View>(viewId).setOnClickListener {
+                activity.openLinkIfPossible(activity.getString(urlId))
+            }
+        }
+        v.findViewById<View>(R.id.about_sources_container).setOnClickListener {
+            activity.openLinkIfPossible(activity.getString(R.string.xr_vlc_source_code_url))
+        }
+        v.findViewById<View>(R.id.about_libraries_container).setOnClickListener {
+            activity.startActivity(Intent(activity, LibrariesActivity::class.java))
+        }
+        v.findViewById<View>(R.id.about_authors_container).setOnClickListener {
+            activity.startActivity(Intent(activity, AuthorsActivity::class.java))
+        }
+        v.findViewById<View>(R.id.about_vlc_card).setOnClickListener {
+            activity.lifecycleScope.launch {
+                val licenseText = withContext(Dispatchers.IO) {
+                    AppContextProvider.appResources.openRawResource(R.raw.vlc_license)
+                        .bufferedReader()
+                        .use { it.readText() }
+                }
+                LicenseDialog.newInstance(
+                    LibraryWithLicense(
+                        activity.getString(R.string.app_name_full),
+                        activity.getString(R.string.about_copyright),
+                        activity.getString(R.string.about_license),
+                        licenseText,
+                        "https://www.gnu.org/licenses/old-licenses/gpl-2.0.html"
+                    )
+                ).show(activity.supportFragmentManager, "VlcLicenseDialog")
+            }
+        }
+
         v.findViewById<View>(R.id.sliding_tabs).setGone()
 
         val logo = v.findViewById<ImageView>(R.id.logo)
@@ -511,50 +556,7 @@ object UiTools {
             }
         }
 
-        v.findViewById<View>(R.id.version_card).setOnClickListener {
-            AboutVersionDialog.newInstance().show(activity.supportFragmentManager, "AboutVersionDialog")
-        }
-        v.findViewById<View>(R.id.about_website_container).setOnClickListener {
-            activity.openLinkIfPossible("https://www.videolan.org/vlc/")
-        }
-        v.findViewById<View>(R.id.about_report_container).setOnClickListener {
-            activity.startActivity(Intent(activity, FeedbackActivity::class.java))
-        }
-        v.findViewById<View>(R.id.about_sources_container).setOnClickListener {
-            activity.openLinkIfPossible("https://code.videolan.org/videolan/vlc-android")
-        }
-
-        v.findViewById<View>(R.id.about_authors_container).setOnClickListener {
-            activity.startActivity(Intent(activity, AuthorsActivity::class.java))
-        }
-        v.findViewById<View>(R.id.about_libraries_container).setOnClickListener {
-            activity.startActivity(Intent(activity, LibrariesActivity::class.java))
-        }
-        v.findViewById<View>(R.id.about_vlc_card).setOnClickListener {
-           var licenseText = ""
-            activity.lifecycleScope.launchWhenStarted {
-                licenseText = AppContextProvider.appResources.openRawResource(R.raw.vlc_license).bufferedReader().use {
-                   it.readText()
-               }
-            }
-            LicenseDialog.newInstance(LibraryWithLicense(activity.getString(R.string.app_name),activity.getString(R.string.about_copyright) , activity.getString(R.string.about_license), licenseText, "https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt")).show(activity.supportFragmentManager, "LicenseDialog")
-        }
-
-        val donationsButton = v.findViewById<CardView>(R.id.donationsButton)
-//        VLCBilling.getInstance(activity.application).addStatusListener {
-//            manageDonationVisibility(activity,donationsButton)
-//        }
-//        manageDonationVisibility(activity,donationsButton)
-
-
-        donationsButton.setOnClickListener {
-            activity.showDonations()
-        }
     }
-
-//    private fun manageDonationVisibility(activity: FragmentActivity, donationsButton:View) {
-//        if (VLCBilling.getInstance(activity.application).status == BillingStatus.FAILURE ||  VLCBilling.getInstance(activity.application).skuDetails.isEmpty()) donationsButton.setGone() else donationsButton.setVisible()
-//    }
 
 
     /**

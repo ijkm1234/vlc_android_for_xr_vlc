@@ -3,6 +3,7 @@
  *  AudioPlayerAnimatorDelegate.kt
  * *************************************************************************
  * Copyright © 2019 VLC authors and VideoLAN
+ * Modified for XRVLC by XRVLC contributors on 2026-08-16.
  * Author: Nicolas POMEPUY
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -144,7 +145,6 @@ internal class AudioPlayerAnimator : IAudioPlayerAnimator, LifecycleObserver {
             audioPlayer.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE -> headerHidePlaylistLandscapeConstraint
             else -> headerHidePlaylistConstraint
         }.applyTo(binding.header)
-        headerShowPlaylistConstraint.applyTo(binding.header)
         audioPlayer.showChips()
     }
 
@@ -262,6 +262,8 @@ internal class AudioPlayerAnimator : IAudioPlayerAnimator, LifecycleObserver {
         binding.playlistSearch.alpha = if (filter) 0f else 1f
         binding.playlistSwitch.alpha = if (filter) 0f else 1f
         binding.advFunction.alpha = if (filter) 0f else 1f
+        binding.collapseAudioPlayer.alpha = if (filter) 0f else 1f
+        binding.collapseAudioPlayer.isEnabled = !filter
         binding.audioMediaSwitcher.alpha = if (filter) 0f else 1f
         binding.playlistSearchText.visibility = if (filter) View.VISIBLE else View.GONE
     }
@@ -278,6 +280,8 @@ internal class AudioPlayerAnimator : IAudioPlayerAnimator, LifecycleObserver {
         binding.playlistSearch.alpha = slideOffset
         binding.playlistSwitch.alpha = slideOffset
         binding.advFunction.alpha = slideOffset
+        binding.collapseAudioPlayer.alpha = slideOffset
+        binding.collapseAudioPlayer.isEnabled = slideOffset > 0.95f
         //views disappearing in full player
         val disappearingViews = arrayOf(binding.headerPlayPause, binding.headerTime, binding.headerShuffle, binding.headerPrevious, binding.headerLargePlayPause, binding.headerNext, binding.headerRepeat)
         disappearingViews.forEach {
@@ -288,6 +292,7 @@ internal class AudioPlayerAnimator : IAudioPlayerAnimator, LifecycleObserver {
         binding.playlistSearch.translationY = -(1 - translationOffset) * 48.dp
         binding.playlistSwitch.translationY = -(1 - translationOffset) * 48.dp
         binding.advFunction.translationY = -(1 - translationOffset) * 48.dp
+        binding.collapseAudioPlayer.translationY = -(1 - translationOffset) * 48.dp
         disappearingViews.forEach {
             it.translationY = translationOffset * 48.dp
         }

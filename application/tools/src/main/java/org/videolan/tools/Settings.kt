@@ -1,3 +1,5 @@
+// Modified for XRVLC by XRVLC contributors on 2026-08-16.
+
 package org.videolan.tools
 
 import android.app.Activity
@@ -158,6 +160,7 @@ const val LIST_TITLE_ELLIPSIZE = "list_title_ellipsize"
 const val KEY_VIDEO_JUMP_DELAY = "video_jump_delay"
 const val KEY_VIDEO_LONG_JUMP_DELAY = "video_long_jump_delay"
 const val KEY_VIDEO_DOUBLE_TAP_JUMP_DELAY = "video_double_tap_jump_delay"
+const val KEY_XR_BUTTON_MAPPINGS = "xr_button_mappings"
 const val KEY_AUDIO_JUMP_DELAY = "audio_jump_delay"
 const val KEY_AUDIO_LONG_JUMP_DELAY = "audio_long_jump_delay"
 const val KEY_AUDIO_FORCE_SHUFFLE = "audio_force_shuffle"

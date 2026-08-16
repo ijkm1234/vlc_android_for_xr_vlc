@@ -1,8 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Modified for XRVLC by XRVLC contributors on 2026-08-16. -->
 <resources xmlns:tools="http://schemas.android.com/tools"
         tools:ignore="MissingTranslation">
 
-    <!-- Main VLC Interface -->
+    <!-- Storage permissions -->
+    <string name="allow_storage_manager_title">Allow VLC to access all files</string>
+    <string name="allow_storage_manager_description">%s\n\nGrant permission?</string>
+    <string name="allow_storage_manager_explanation">To get all the capabilities of VLC and support for all media file types, we strongly advise you to grant this permission.</string>
+    <string name="encountered_error_title">Playback error</string>
+    <string name="encountered_error_message">VLC encountered an error with this media.\nPlease try refreshing the media library.</string>
+    <string name="playback_speed_title">Playback speed</string>
+    <string name="playback_speed_summary">Change the playback speed</string>
+    <string name="presets">Presets</string>
+    <string name="subs_download_error">Service unavailable. Please try again.</string>
+
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
     <string name="app_name" translatable="false">VLC</string>
@@ -1445,4 +1456,14 @@
     <string name="feedback_email_warning_try_anyway">Try anyway</string>
     <string name="forum_url" translatable="false">https://forum.videolan.org/viewforum.php?f=35</string>
     <string name="doc_url" translatable="false">https://docs.videolan.me/vlc-user/android/</string>
+    <string name="xr_controller_shortcuts">XR controller shortcuts</string>
+    <string name="xr_controller_jump_delay_summary">Seek duration uses Player controls > Jump delay.</string>
+    <string name="xr_left_stick_click">Left stick click</string>
+    <string name="xr_right_stick_click">Right stick click</string>
+    <string name="xr_button_y">Y button</string>
+    <string name="xr_button_b">B button</string>
+    <string name="xr_action_none">None</string>
+    <string name="xr_action_toggle_2x_speed">Toggle 2x speed</string>
+    <string name="xr_action_toggle_subtitle">Toggle subtitles</string>
+    <string name="xr_action_reset_screen_transform">Reset screen position</string>
 </resources>

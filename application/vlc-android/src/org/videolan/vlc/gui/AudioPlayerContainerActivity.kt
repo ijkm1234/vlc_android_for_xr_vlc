@@ -3,6 +3,7 @@
  *  AudioPlayerContainerActivity.kt
  * **************************************************************************
  *  Copyright © 2019 VLC authors and VideoLAN
+ * Modified for XRVLC by XRVLC contributors on 2026-08-16.
  *  Author: Geoffrey Métais
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -136,6 +137,7 @@ open class AudioPlayerContainerActivity : BaseActivity(), KeycodeListener, Sched
     private lateinit var resumeCard: Snackbar
     private var preventRescan = false
     private var showAudioPlayerWhenResumed = false
+    private var expandAudioPlayerOnNextShow = false
 
     private var playerShown = false
     val tipsDelegate: AudioTipsDelegate by lazy(LazyThreadSafetyMode.NONE) { AudioTipsDelegate(this) }
@@ -374,7 +376,10 @@ open class AudioPlayerContainerActivity : BaseActivity(), KeycodeListener, Sched
             // [BottomSheetBehavior.onLayoutChild] and prevent any scroll event to be forwarded by the ConstraintLayout views (the bookmark list for example)
             // That why we wait that the layout has been done to perform this. See https://code.videolan.org/videolan/vlc-android/-/issues/2241#note_291050
             audioPlayer.showCover(settings.getBoolean(KEY_AUDIO_PLAYER_SHOW_COVER, false))
-            if (playerBehavior.state == STATE_COLLAPSED) audioPlayer.onSlide(0f)
+            when (playerBehavior.state) {
+                STATE_COLLAPSED -> audioPlayer.onSlide(0f)
+                STATE_EXPANDED -> audioPlayer.onSlide(1f)
+            }
         }
         playerBehavior.addBottomSheetCallback(object : BottomSheetCallback() {
             override fun onSlide(bottomSheet: View, slideOffset: Float) {
@@ -648,7 +653,19 @@ open class AudioPlayerContainerActivity : BaseActivity(), KeycodeListener, Sched
             if (state == STATE_HIDDEN) state = STATE_COLLAPSED
             isHideable = false
             if (tipsDelegate.currentTip == null && playlistTipsDelegate.currentTip == null) lock(false)
+            if (expandAudioPlayerOnNextShow) {
+                state = STATE_EXPANDED
+                audioPlayer.onSlide(1f)
+                audioPlayerContainer.post {
+                    if (::playerBehavior.isInitialized && playerBehavior.state == STATE_EXPANDED) audioPlayer.onSlide(1f)
+                }
+            }
         }
+        expandAudioPlayerOnNextShow = false
+    }
+
+    fun requestExpandAudioPlayerOnNextShow() {
+        expandAudioPlayerOnNextShow = true
     }
 
     /**
@@ -684,6 +701,7 @@ open class AudioPlayerContainerActivity : BaseActivity(), KeycodeListener, Sched
     }
 
     private fun hideAudioPlayerImpl() {
+        expandAudioPlayerOnNextShow = false
         if (!isAudioPlayerReady) return
         playerBehavior.isHideable = true
         playerBehavior.state = STATE_HIDDEN

@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Modified for XRVLC by XRVLC contributors on 2026-08-16. -->
 <resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
 
     <style name="Theme.VLC" parent="Theme.VLC.7" />
@@ -184,6 +185,19 @@
         <item name="fast_scroller_bubble">@drawable/fastscroller_bubble</item>
         <item name="fast_scroller_handle">@drawable/fastscroller_handle</item>
         <item name="gridview_progressbar">@drawable/gridview_progressbar</item>
+    </style>
+
+    <style name="Theme.VLC.XrSubtitlePickerDialog" parent="Theme.VLC.PickerDialog">
+        <item name="android:background">@android:color/transparent</item>
+        <item name="background">@android:color/transparent</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:colorBackgroundCacheHint">@android:color/transparent</item>
+        <item name="android:windowContentOverlay">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowIsFloating">true</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="windowNoTitle">true</item>
     </style>
 
     <style name="Theme.VLC.SendCrashDialog" parent="Theme.MaterialComponents.Dialog">
@@ -490,6 +504,10 @@
         <item name="android:windowTranslucentStatus">true</item>
         <item name="android:backgroundDimEnabled">false</item>
     </style>
+
+    <style name="Theme.VLC.Start.Transparent.NoUI" parent="Theme.VLC.Transparent.NoUI" />
+
+    <style name="Theme.VLC.Main" parent="Theme.VLC" />
 
     <style name="Theme.VLC.Player" parent="Theme.VLC.Player.7" />
 

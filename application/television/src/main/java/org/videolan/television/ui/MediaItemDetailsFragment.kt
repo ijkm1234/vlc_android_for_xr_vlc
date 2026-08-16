@@ -2,6 +2,7 @@
  * MediaItemDetailsFragment.java
  *
  * Copyright © 2014-2019 VLC authors, VideoLAN and VideoLabs
+ * Modified for XRVLC by XRVLC contributors on 2026-08-16.
  * Author: Geoffrey Métais
  *
  * This program is free software; you can redistribute it and/or modify
@@ -409,7 +410,8 @@ class MediaItemDetailsFragment : DetailsSupportFragment(), CoroutineScope by Mai
                 ID_DL_SUBS -> MediaUtils.getSubs(requireActivity(), viewModel.media)
                 ID_PLAY_FROM_START -> {
                     viewModel.mediaStarted = false
-                    VideoPlayerActivity.start(requireActivity(), viewModel.media.uri, true)
+                    viewModel.media.addFlags(MediaWrapper.MEDIA_FROM_START)
+                    TvUtil.playMedia(activity, viewModel.media)
                     activity.finish()
                 }
                 ID_GET_INFO -> startActivity(Intent(requireActivity(), MediaScrapingTvActivity::class.java).apply { putExtra(MediaScrapingTvActivity.MEDIA, viewModel.media) })

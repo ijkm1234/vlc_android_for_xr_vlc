@@ -1,4 +1,6 @@
-<?xml version="1.0" encoding="utf-8"?><!--
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Modified for XRVLC by XRVLC contributors on 2026-08-16. -->
+<!--
   ~ *************************************************************************
   ~  safe_mode_activity.xml
   ~ **************************************************************************
@@ -24,6 +26,7 @@
 
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:tools="http://schemas.android.com/tools"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
         xmlns:vlc="http://schemas.android.com/apk/res-auto">
 
     <data>
@@ -221,12 +224,12 @@
                 android:layout_marginTop="24dp"
                 android:visibility="gone"
                 tools:visibility="visible"
-                vlc:columnCount="3"
+                app:columnCount="3"
                 vlc:layout_constraintEnd_toEndOf="parent"
                 vlc:layout_constraintStart_toStartOf="parent"
                 vlc:layout_constraintTop_toBottomOf="@+id/pin_code_parent1"
-                vlc:rowCount="4"
-                vlc:useDefaultMargins="true">
+                app:rowCount="4"
+                app:useDefaultMargins="true">
 
             <TextView
                     android:id="@+id/keyboard_button_1"
@@ -317,8 +320,8 @@
                     android:padding="4dp"
                     android:scaleType="center"
                     android:tag="-1"
-                    vlc:layout_columnSpan="2"
-                    vlc:layout_columnWeight="2"
+                    app:layout_columnSpan="2"
+                    app:layout_columnWeight="2"
                     vlc:srcCompat="@drawable/ic_backspace_white" />
 
         </androidx.gridlayout.widget.GridLayout>

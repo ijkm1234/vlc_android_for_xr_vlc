@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Modified for XRVLC by XRVLC contributors on 2026-08-16. -->
 <resources>
 
-    <color name="black">#000000</color>
     <color name="white">#ffffff</color>
     <color name="red">#bb0000</color>
 

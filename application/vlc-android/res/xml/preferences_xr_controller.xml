@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright © 2026 XRVLC contributors. SPDX-License-Identifier: GPL-2.0-or-later -->
+
+<androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:key="xr_controller_shortcuts"
+        android:title="@string/xr_controller_shortcuts">
+
+    <PreferenceCategory
+            android:title="@string/player_controls"
+            app:iconSpaceReserved="false">
+
+        <ListPreference
+                android:key="xr_pref_left_stick_click"
+                android:entries="@array/xr_controller_action_entries"
+                android:entryValues="@array/xr_controller_action_values"
+                android:summary="%s"
+                android:title="@string/xr_left_stick_click"
+                app:iconSpaceReserved="false"
+                app:persistent="false"
+                app:singleLineTitle="false" />
+
+        <ListPreference
+                android:key="xr_pref_right_stick_click"
+                android:entries="@array/xr_controller_action_entries"
+                android:entryValues="@array/xr_controller_action_values"
+                android:summary="%s"
+                android:title="@string/xr_right_stick_click"
+                app:iconSpaceReserved="false"
+                app:persistent="false"
+                app:singleLineTitle="false" />
+
+        <ListPreference
+                android:key="xr_pref_button_y"
+                android:entries="@array/xr_controller_action_entries"
+                android:entryValues="@array/xr_controller_action_values"
+                android:summary="%s"
+                android:title="@string/xr_button_y"
+                app:iconSpaceReserved="false"
+                app:persistent="false"
+                app:singleLineTitle="false" />
+
+        <ListPreference
+                android:key="xr_pref_button_b"
+                android:entries="@array/xr_controller_action_entries"
+                android:entryValues="@array/xr_controller_action_values"
+                android:summary="%s"
+                android:title="@string/xr_button_b"
+                app:iconSpaceReserved="false"
+                app:persistent="false"
+                app:singleLineTitle="false" />
+
+    </PreferenceCategory>
+</androidx.preference.PreferenceScreen>

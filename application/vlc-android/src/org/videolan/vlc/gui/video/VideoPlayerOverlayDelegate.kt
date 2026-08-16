@@ -3,6 +3,7 @@
  *  VideoPlayerOverlayDelegate.kt
  * *************************************************************************
  * Copyright © 2020 VLC authors and VideoLAN
+ * Modified for XRVLC by XRVLC contributors on 2026-08-16.
  * Author: Nicolas POMEPUY
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1102,13 +1103,22 @@ class VideoPlayerOverlayDelegate (private val player: VideoPlayerActivity) {
     }
 
     private fun pickSubtitles() {
-        val uri = player.videoUri ?: return
-        val media = if (uri.scheme.isSchemeFile() || uri.scheme.isSchemeNetwork()) MediaWrapperImpl(FileUtils.getParent(uri.toString())!!.toUri()) else null
+        val media = createSubtitlePickerParentMedia()
         player.isShowingDialog = true
         val filePickerIntent = Intent(player, FilePickerActivity::class.java)
         filePickerIntent.putExtra(KEY_MEDIA, media)
         player.startActivityForResult(filePickerIntent, 0)
 
+    }
+
+    private fun createSubtitlePickerParentMedia(): MediaWrapper {
+        val uri = player.videoUri
+        val parent = if (uri != null && (uri.scheme.isSchemeFile() || uri.scheme.isSchemeNetwork()))
+            FileUtils.getParent(uri.toString())
+        else
+            null
+        val fallback = "file://${AndroidDevices.EXTERNAL_PUBLIC_DIRECTORY}"
+        return MediaWrapperImpl((parent ?: fallback).toUri())
     }
 
     private fun downloadSubtitles() = player.service?.currentMediaWrapper?.let {

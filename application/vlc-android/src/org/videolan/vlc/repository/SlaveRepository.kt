@@ -2,6 +2,7 @@
  *  SlaveRepository.kt
  * ****************************************************************************
  * Copyright © 2018 VLC authors and VideoLAN
+ * Modified for XRVLC by XRVLC contributors on 2026-08-16.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,6 +48,13 @@ class SlaveRepository(private val slaveDao:SlaveDao) : IOScopedObject() {
     fun saveSlaves(mw: MediaWrapper): List<Job>? {
         return mw.slaves?.let{
             it.map { saveSlave(mw.location, it.type, it.priority, it.uri) }
+        }
+    }
+
+    suspend fun saveSlaves(mediaPath: String, slaves: Array<IMedia.Slave>) {
+        if (slaves.isEmpty()) return
+        withContext(Dispatchers.IO) {
+            slaveDao.insert(slaves.map { Slave(mediaPath, it.type, it.priority, it.uri) }.toTypedArray())
         }
     }
 

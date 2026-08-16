@@ -1,6 +1,7 @@
+# Modified for XRVLC by XRVLC contributors on 2026-08-16.
 # VLC
 
-/libvlcjni
+/libvlcjni/
 /vlc/
 /toolchains/
 application/app/src/main/assets/
@@ -64,6 +65,7 @@ captures/
 gradlew.bat
 gradlew
 gradle*/
+/gradle-*-bin.zip
 .gradle/
 build/
 vlc-android/build/

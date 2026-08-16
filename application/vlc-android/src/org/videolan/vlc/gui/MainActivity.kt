@@ -2,6 +2,7 @@
  * MainActivity.java
  *
  * Copyright © 2011-2019 VLC authors and VideoLAN
+ * Modified for XRVLC by XRVLC contributors on 2026-08-16.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +22,7 @@
 package org.videolan.vlc.gui
 
 import android.annotation.SuppressLint
+import android.app.ActivityManager
 import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -50,6 +52,7 @@ import org.videolan.resources.AndroidDevices
 import org.videolan.resources.CRASH_HAPPENED
 import org.videolan.resources.EXPORT_SETTINGS_FILE
 import org.videolan.resources.EXTRA_TARGET
+import org.videolan.resources.AppContextProvider
 import org.videolan.tools.KEY_INCOGNITO
 import org.videolan.tools.KEY_LAST_SESSION_CRASHED
 import org.videolan.tools.KEY_MEDIALIBRARY_AUTO_RESCAN
@@ -67,6 +70,8 @@ import org.videolan.tools.putSingle
 import org.videolan.vlc.BuildConfig
 import org.videolan.vlc.R
 import org.videolan.vlc.StartActivity
+import org.videolan.vlc.bridge.UnityBridgeContract
+import org.videolan.vlc.bridge.UnityMessageDispatcher
 import org.videolan.vlc.gui.audio.AudioBrowserFragment
 import org.videolan.vlc.gui.dialogs.NotificationPermissionManager
 import org.videolan.vlc.gui.dialogs.PermissionListDialog
@@ -91,6 +96,7 @@ import org.videolan.vlc.util.WhatsNewManager
 import org.videolan.vlc.util.WidgetMigration
 import org.videolan.vlc.util.getScreenWidth
 import java.io.File
+import java.lang.ref.WeakReference
 import java.util.concurrent.TimeUnit
 
 private const val TAG = "VLC/MainActivity"
@@ -112,6 +118,7 @@ class MainActivity : ContentActivity(),
     @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        applyVlcTaskDescription()
         Util.checkCpuCompatibility(this)
         /*** Start initializing the UI  */
         setContentView(R.layout.main)
@@ -124,6 +131,7 @@ class MainActivity : ContentActivity(),
         scanNeeded = savedInstanceState == null && settings.getBoolean(KEY_MEDIALIBRARY_AUTO_RESCAN, true)
         mediaLibrary = Medialibrary.getInstance()
 
+        /*
         if (!NotificationPermissionManager.launchIfNeeded(this)) {
             if (!WidgetMigration.launchIfNeeded(this)) {
                if (!Settings.firstRun)  WhatsNewManager.launchIfNeeded(this) else WhatsNewManager.markAsShown(settings)
@@ -176,6 +184,7 @@ class MainActivity : ContentActivity(),
 
             }
         }
+        */
         if (!settings.getBoolean(KEY_OBSOLETE_RESTORE_FILE_WARNED, false)) {
             lifecycleScope.launch {
                 val file = File(AndroidDevices.EXTERNAL_PUBLIC_DIRECTORY + EXPORT_SETTINGS_FILE)
@@ -205,9 +214,20 @@ class MainActivity : ContentActivity(),
         backPressedCallback.isEnabled = AndroidUtil.isNougatOrLater && isInMultiWindowMode
     }
 
-
     override fun onResume() {
         super.onResume()
+        applyVlcTaskDescription()
+        AppContextProvider.currentActivity = this
+        synchronized(AppContextProvider.aliveActivities) {
+            var alreadyTracked = false
+            val iterator = AppContextProvider.aliveActivities.iterator()
+            while (iterator.hasNext()) {
+                val activity = iterator.next().get()
+                if (activity == null) iterator.remove()
+                else if (activity === this) alreadyTracked = true
+            }
+            if (!alreadyTracked) AppContextProvider.aliveActivities.add(WeakReference(this))
+        }
         //Only the partial permission is granted for Android 11+
         if (!settings.getBoolean(PERMISSION_NEVER_ASK, false) && settings.getLong(PERMISSION_NEXT_ASK, 0L) < System.currentTimeMillis() && Permissions.canReadStorage(this) && !Permissions.hasAllAccess(this)) {
             UiTools.snackerMessageInfinite(this, getString(R.string.partial_content))?.setAction(R.string.more) {
@@ -217,6 +237,20 @@ class MainActivity : ContentActivity(),
         }
         updateIncognitoModeIcon()
         configurationChanged(getScreenWidth())
+    }
+
+    private fun applyVlcTaskDescription() {
+        setTaskDescription(
+                ActivityManager.TaskDescription.Builder()
+                        .setLabel(getString(R.string.app_name))
+                        .setIcon(R.drawable.ic_iconpark_loading_four)
+                        .build()
+        )
+    }
+
+    private fun notifyUnityVlcActivityReady() {
+        UnityMessageDispatcher.sendToLibraryLauncher(UnityBridgeContract.Method.VLC_ACTIVITY_READY)
+        android.util.Log.i(TAG, "VLC MainActivity start notification dispatched to Unity")
     }
 
     override fun onRequestPermissionsResult(
@@ -245,6 +279,7 @@ class MainActivity : ContentActivity(),
 
     override fun onStart() {
         super.onStart()
+        notifyUnityVlcActivityReady()
         if (mediaLibrary.isInitiated) {
             /* Load media items from database and storage */
             if (scanNeeded && Permissions.canReadStorage(this) && !mediaLibrary.isWorking) this.reloadLibrary()

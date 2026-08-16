@@ -3,6 +3,7 @@
  *  Navigator.kt
  * **************************************************************************
  *  Copyright © 2018-2019 VLC authors and VideoLAN
+ * Modified for XRVLC by XRVLC contributors on 2026-08-16.
  *  Author: Geoffrey Métais
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -64,7 +65,7 @@ private const val TAG = "Navigator"
 
 class Navigator : NavigationBarView.OnItemSelectedListener, DefaultLifecycleObserver, INavigator {
 
-    private val defaultFragmentId = R.id.nav_video
+    private val defaultFragmentId = R.id.nav_directories
     override var currentFragmentId: Int = 0
     private var currentFragment: Fragment? = null
     private lateinit var activity: MainActivity

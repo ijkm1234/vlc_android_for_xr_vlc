@@ -3,6 +3,7 @@
  *  SavePlaylist.java
  * **************************************************************************
  *  Copyright © 2015 VLC authors and VideoLAN
+ * Modified for XRVLC by XRVLC contributors on 2026-08-16.
  *  Author: Geoffrey Métais
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -65,6 +66,7 @@ import org.videolan.vlc.gui.dialogs.DuplicationWarningDialog.Companion.REQUEST_K
 import org.videolan.vlc.gui.helpers.UiTools
 import org.videolan.vlc.gui.helpers.UiTools.showPinIfNeeded
 import org.videolan.vlc.providers.FileBrowserProvider
+import org.videolan.vlc.repository.SlaveRepository
 import org.videolan.vlc.util.isSchemeStreaming
 import org.videolan.vlc.util.onAnyChange
 import org.videolan.vlc.viewmodels.browser.TYPE_FILE
@@ -300,25 +302,40 @@ class SavePlaylistDialog : VLCBottomSheetDialogFragment(), View.OnClickListener,
     }
 
     private fun savePlaylist(playlist: Playlist, tracks: Array<MediaWrapper>, confirmed:Boolean = false) {
+        val slaveRepository = SlaveRepository.getInstance(requireContext().applicationContext)
         AppScope.launch(coroutineContextProvider.IO) {
             if (tracks.isEmpty()) return@launch
             val ids = LinkedList<Long>()
             for (mw in tracks) {
+                val slaves = mw.slaves
+                val slaveUris = mw.slaves?.joinToString { it.uri.replace(Regex("://[^/@]+@"), "://***@") }
+                android.util.Log.e(TAG, "[PlaylistSlavesCheck] savePlaylist input title=${mw.title} location=${mw.location.replace(Regex("://[^/@]+@"), "://***@")} slavesNull=${mw.slaves == null} slavesCount=${mw.slaves?.size ?: 0} slaveUris=$slaveUris")
                 val id = mw.id
+                var mediaLocationForSlaves: String? = null
                 if (id == 0L) {
                     var media = medialibrary.getMedia(mw.uri)
                     if (media != null) {
                         ids.add(media.id)
                         media.title = mw.title
+                        mediaLocationForSlaves = media.location ?: mw.location
                     } else {
                         media = if (isSchemeStreaming(mw.location))
                             medialibrary.addStream(mw.location, mw.title)
                         else
                             medialibrary.addMedia(mw.location, -1L)
-                        if (media != null) ids.add(media.id)
+                        if (media != null) {
+                            ids.add(media.id)
+                            mediaLocationForSlaves = media.location ?: mw.location
+                        }
                     }
-                } else
+                } else {
                     ids.add(id)
+                    mediaLocationForSlaves = mw.location
+                }
+                if (!slaves.isNullOrEmpty() && mediaLocationForSlaves != null) {
+                    slaveRepository.saveSlaves(mediaLocationForSlaves, slaves)
+                    android.util.Log.e(TAG, "[PlaylistSlavesPersist] saved title=${mw.title} location=${mediaLocationForSlaves.replace(Regex("://[^/@]+@"), "://***@")} slavesCount=${slaves.size}")
+                }
             }
             var resume = true
             if (binding.replaceSwitch.isChecked) {

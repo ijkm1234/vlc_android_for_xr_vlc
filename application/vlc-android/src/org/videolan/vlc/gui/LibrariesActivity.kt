@@ -1,3 +1,5 @@
+// Modified for XRVLC by XRVLC contributors on 2026-08-16.
+
 package org.videolan.vlc.gui
 
 import android.os.Bundle
@@ -48,7 +50,7 @@ class LibrariesActivity : BaseActivity() {
         setSupportActionBar(toolbar)
         supportActionBar!!.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeAsUpIndicator(R.drawable.ic_close_up)
-        title = getString(R.string.libraries)
+        title = getString(R.string.xr_third_party_libraries)
 
         binding.licenses.layoutManager = LinearLayoutManager(this)
         adapter = LibrariesAdapter {

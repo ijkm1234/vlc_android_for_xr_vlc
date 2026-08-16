@@ -1,3 +1,5 @@
+// Modified for XRVLC by XRVLC contributors on 2026-08-16.
+
 package org.videolan.resources.util
 
 import android.Manifest
@@ -125,4 +127,3 @@ fun applyOverscanMargin(activity: Activity) {
     val vm = activity.resources.getDimensionPixelSize(R.dimen.tv_overscan_vertical)
     activity.findViewById<View>(android.R.id.content).setPadding(hm, vm, hm, vm)
 }
-

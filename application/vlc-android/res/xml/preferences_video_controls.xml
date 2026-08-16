@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Modified for XRVLC by XRVLC contributors on 2026-08-16. -->
 
 <androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -181,6 +182,5 @@
                 android:title="@string/lock_use_sensor_title"
                 app:singleLineTitle="false" />
     </PreferenceCategory>
-
 
 </androidx.preference.PreferenceScreen>

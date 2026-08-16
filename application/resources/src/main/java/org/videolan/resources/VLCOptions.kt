@@ -2,6 +2,7 @@
  * VLCOptions.java
  *
  * Copyright © 2015 VLC authors and VideoLAN
+ * Modified for XRVLC by XRVLC contributors on 2026-08-16.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -217,7 +218,7 @@ object VLCOptions {
                 val optionsArray = customOptions.split("\\r?\\n".toRegex()).toTypedArray()
                 if (!optionsArray.isNullOrEmpty()) Collections.addAll(options, *optionsArray)
             }
-            if (pref.getBoolean(KEY_PREFER_SMBV1, true))
+            if (pref.getBoolean(KEY_PREFER_SMBV1, false))
                 options.add("--smb-force-v1")
             if (!Settings.showTvUi) {
                 //Ambisonic

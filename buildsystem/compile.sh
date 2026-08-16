@@ -1,4 +1,5 @@
 #! /bin/sh
+# Modified for XRVLC by XRVLC contributors on 2026-08-16.
 set -e
 
 
@@ -217,7 +218,7 @@ init_local_props() {
     fi
     # escape special chars to get regex that matches string
     make_regex() {
-        echo "$1" | sed -e 's/\([[\^$.*]\)/\\\1/g' -
+        echo "$1" | sed -e 's/\([[\^$.*]\)/\\\1/g'
     }
     android_sdk_regex=`make_regex "${ANDROID_SDK}"`
     android_ndk_regex=`make_regex "${ANDROID_NDK}"`
@@ -226,7 +227,7 @@ init_local_props() {
     total_sdk_count=`grep -c "${sdk_line_start}" "$1"`
     good_sdk_count=`grep -c "${sdk_line_start}${android_sdk_regex}\$" "$1"`
     # check for lines setting the NDK directory
-    ndk_line_start="^ndk\.dir="
+    ndk_line_start="^android\.ndkPath="
     total_ndk_count=`grep -c "${ndk_line_start}" "$1"`
     good_ndk_count=`grep -c "${ndk_line_start}${android_ndk_regex}\$" "$1"`
     # if one of each is found and both match the environment vars, no action needed
@@ -279,58 +280,71 @@ fi
 ####################
 
 
-if [ "$FORCE_VLC_4" = 1 ]; then
-    LIBVLCJNI_TESTED_HASH=da9a05e49b63780977b4a993e4f2705f7b1290f8
-    LIBVLCJNI_BRANCH="master"
-else
-    LIBVLCJNI_TESTED_HASH=7cd0c151da4162aa3052fb6949ddab1436d8fafb
-    LIBVLCJNI_BRANCH="libvlcjni-3.x"
-fi
-LIBVLCJNI_REPOSITORY=https://code.videolan.org/videolan/libvlcjni.git
+LIBVLCJNI_VERSION="v0.0.1"
+LIBVLCJNI_TESTED_HASH=2d96eac4d95e16c3da1dffa109848e7605ca1cf9
+LIBVLCJNI_REPOSITORY=https://github.com/ijkm1234/libvlcjni_for_xr_vlc.git
 
 : ${VLC_LIBJNI_PATH:="$(pwd -P)/libvlcjni"}
 
-if [ ! -d "$VLC_LIBJNI_PATH" ] || [ ! -d "$VLC_LIBJNI_PATH/.git" ]; then
+# Accept both a standalone checkout (.git directory) and an existing gitdir file.
+if [ ! -d "$VLC_LIBJNI_PATH" ] || [ ! -e "$VLC_LIBJNI_PATH/.git" ]; then
     diagnostic "libvlcjni sources: not found, cloning"
     if [ ! -d "$VLC_LIBJNI_PATH" ]; then
-        git clone --single-branch --branch ${LIBVLCJNI_BRANCH} "${LIBVLCJNI_REPOSITORY}"
-        cd libvlcjni
+        git clone --single-branch --branch "${LIBVLCJNI_VERSION}" \
+            "${LIBVLCJNI_REPOSITORY}" "${VLC_LIBJNI_PATH}"
     else # folder exist with only the artifacts
-        cd libvlcjni
-        git init
-        git remote add origin "${LIBVLCJNI_REPOSITORY}"
-        git pull origin ${LIBVLCJNI_BRANCH}
+        git -C "${VLC_LIBJNI_PATH}" init
+        git -C "${VLC_LIBJNI_PATH}" remote add origin "${LIBVLCJNI_REPOSITORY}"
+        git -C "${VLC_LIBJNI_PATH}" fetch "${LIBVLCJNI_REPOSITORY}" \
+            "refs/tags/${LIBVLCJNI_VERSION}:refs/tags/${LIBVLCJNI_VERSION}"
     fi
-    git reset --hard ${LIBVLCJNI_TESTED_HASH} || fail "libvlcjni sources: LIBVLCJNI_TESTED_HASH ${LIBVLCJNI_TESTED_HASH} not found"
-    init_local_props local.properties || { echo "Error initializing local.properties"; exit $?; }
-    cd ..
+    git -C "${VLC_LIBJNI_PATH}" cat-file -e "${LIBVLCJNI_VERSION}^{commit}" || \
+        fail "libvlcjni sources: release tag ${LIBVLCJNI_VERSION} not found"
+    libvlcjni_version_hash=$(git -C "${VLC_LIBJNI_PATH}" rev-parse \
+        "${LIBVLCJNI_VERSION}^{commit}")
+    [ "${libvlcjni_version_hash}" = "${LIBVLCJNI_TESTED_HASH}" ] || \
+        fail "libvlcjni sources: ${LIBVLCJNI_VERSION} resolves to ${libvlcjni_version_hash}, expected ${LIBVLCJNI_TESTED_HASH}"
+    git -C "${VLC_LIBJNI_PATH}" reset --hard "${LIBVLCJNI_TESTED_HASH}" || \
+        fail "libvlcjni sources: LIBVLCJNI_TESTED_HASH ${LIBVLCJNI_TESTED_HASH} not found"
+    init_local_props "${VLC_LIBJNI_PATH}/local.properties" || \
+        { echo "Error initializing local.properties"; exit $?; }
 fi
 
 ##########
 # GRADLE #
 ##########
 
-GRADLE_VERSION=9.2.1
+GRADLE_VERSION=8.6
 # the SHA256 is found in https://gradle.org/release-checksums/
-GRADLE_SHA256=72f44c9f8ebcb1af43838f45ee5c4aa9c5444898b3468ab3f4af7b6076c5bc3f
+GRADLE_SHA256=9631d53cf3e74bfa726893aee1f8994fee4e060c401335946dba2156f440f24c
 GRADLE_URL=https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip
 GRADLE_DOWNLOADED_ZIP=gradle-${GRADLE_VERSION}-bin.zip
 
 if [ -e "./gradlew" ] && [ -x "./gradlew" ]; then
-    GRADLE_CACHED_VERSION=$(./gradlew -q 2>/dev/null | grep gradle_version= | cut -b 16-)
-    if [ "$GRADLE_PATH_VERSION" != "$GRADLE_VERSION" ]; then
-        diagnostic "gradlew version $GRADLE_PATH_VERSION not matching $GRADLE_VERSION"
+    GRADLE_CACHED_VERSION=$(sed -n 's/.*gradle-\([0-9.]*\)-.*/\1/p' gradle/wrapper/gradle-wrapper.properties)
+    if [ "$GRADLE_CACHED_VERSION" != "$GRADLE_VERSION" ]; then
+        diagnostic "gradlew version $GRADLE_CACHED_VERSION not matching $GRADLE_VERSION"
         rm -rf "./gradlew"
     fi
 fi
 if [ ! -e "./gradlew" ] || [ ! -x "./gradlew" ]; then
     diagnostic "gradlew not found"
     export PATH="$(pwd -P)/gradle-${GRADLE_VERSION}/bin:$PATH"
+    if [ -n "${GRADLE_HOME:-}" ] && [ -x "${GRADLE_HOME}/bin/gradle" ]; then
+        export PATH="${GRADLE_HOME}/bin:$PATH"
+    fi
     GRADLE_PATH_VERSION=$(cd buildsystem/gradle_version; gradle -q 2>/dev/null | grep gradle_version= | cut -b 16-)
     if [ "$GRADLE_PATH_VERSION" != "$GRADLE_VERSION" ]; then
         diagnostic "gradle could not be found in PATH, downloading"
         wget ${GRADLE_URL} -O ${GRADLE_DOWNLOADED_ZIP}  2>/dev/null || curl -LO ${GRADLE_URL} || fail "gradle: download failed"
-        echo $GRADLE_SHA256 ${GRADLE_DOWNLOADED_ZIP} | sha256sum -c || fail "gradle: hash mismatch"
+        if command -v sha256sum >/dev/null 2>&1; then
+            GRADLE_ACTUAL_SHA256=$(sha256sum "${GRADLE_DOWNLOADED_ZIP}" | awk '{print $1}')
+        elif command -v shasum >/dev/null 2>&1; then
+            GRADLE_ACTUAL_SHA256=$(shasum -a 256 "${GRADLE_DOWNLOADED_ZIP}" | awk '{print $1}')
+        else
+            fail "gradle: no SHA-256 checksum tool found"
+        fi
+        [ "${GRADLE_ACTUAL_SHA256}" = "${GRADLE_SHA256}" ] || fail "gradle: hash mismatch"
 
         unzip -o ${GRADLE_DOWNLOADED_ZIP} || fail "gradle: unzip failed"
         rm -rf ${GRADLE_DOWNLOADED_ZIP}
@@ -428,7 +442,7 @@ if [ -n "$M2_REPO" ]; then
 fi
 
 if [ "$BUILD_LIBVLC" = 1 ];then
-    GRADLE_ABI=$GRADLE_ABI ./gradlew ${gradle_prop} --project-dir ${VLC_LIBJNI_PATH}/libvlc $GRADLE_TASK
+    GRADLE_ABI=$GRADLE_ABI ./gradlew ${gradle_prop} ":libvlcjni:libvlc:${GRADLE_TASK}"
     RUN=0
 elif [ "$BUILD_MEDIALIB" = 1 ]; then
     gradle_prop="$gradle_prop -PvlcLibVariant=$GRADLE_ABI"

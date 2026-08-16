@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Modified for XRVLC by XRVLC contributors on 2026-08-16. -->
 
 <androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
                                       xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -20,7 +21,7 @@
 
     <CheckBoxPreference
             app:singleLineTitle="false"
-            android:defaultValue="true"
+            android:defaultValue="false"
             android:key="prefer_smbv1"
             android:summary="@string/prefersmbv1_summary"
             android:title="@string/prefersmbv1"/>
@@ -138,7 +139,9 @@
                 android:title="@string/browser_quick_play_default"/>
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="@string/developer_prefs_category">
+    <PreferenceCategory
+            android:key="xr_restricted_developer_settings"
+            android:title="@string/developer_prefs_category">
         <CheckBoxPreference
                 app:singleLineTitle="false"
                 android:defaultValue="true"

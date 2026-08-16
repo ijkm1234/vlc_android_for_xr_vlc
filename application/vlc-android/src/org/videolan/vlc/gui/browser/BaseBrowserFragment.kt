@@ -3,6 +3,7 @@
  * BaseBrowserFragment.kt
  * ****************************************************************************
  * Copyright © 2018 VLC authors and VideoLAN
+ * Modified for XRVLC by XRVLC contributors on 2026-08-16.
  * Author: Geoffrey Métais
  *
  * This program is free software; you can redistribute it and/or modify
@@ -757,7 +758,22 @@ abstract class BaseBrowserFragment : MediaBrowserFragment<BrowserModel>(), IRefr
                             addFlags(MediaWrapper.MEDIA_NO_PARSE)
                     }
                     when (DefaultPlaybackActionMediaType.FILE.getCurrentPlaybackAction(Settings.getInstance(requireActivity()))) {
-                        DefaultPlaybackAction.PLAY -> MediaUtils.openMedia(requireContext(), getMediaWithMeta(media))
+                        DefaultPlaybackAction.PLAY -> {
+                            if (mediaWrapper.type == MediaWrapper.TYPE_VIDEO) {
+                                val sourceVideos = viewModel.dataset.getList()
+                                    .filterIsInstance<MediaWrapper>()
+                                    .filter { it.type == MediaWrapper.TYPE_VIDEO }
+                                val positionInPlaylist = sourceVideos.indexOf(mediaWrapper)
+                                val videos = sourceVideos
+                                    .map {
+                                        getMediaWithMeta(it).apply {
+                                            if (Settings.getInstance(requireActivity()).getBoolean(KEY_QUICK_PLAY_DEFAULT, false))
+                                                addFlags(MediaWrapper.MEDIA_NO_PARSE)
+                                        }
+                                    }
+                                MediaUtils.openList(v.context, videos, positionInPlaylist)
+                            } else MediaUtils.openMedia(requireContext(), getMediaWithMeta(media))
+                        }
                         DefaultPlaybackAction.ADD_TO_QUEUE -> MediaUtils.appendMedia(activity, media)
                         DefaultPlaybackAction.INSERT_NEXT -> MediaUtils.insertNext(activity, media)
                         else -> {

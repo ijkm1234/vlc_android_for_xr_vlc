@@ -1,3 +1,5 @@
+// Modified for XRVLC by XRVLC contributors on 2026-08-16.
+
 plugins {
     id 'com.android.library'
     id 'kotlin-android'
@@ -68,7 +70,7 @@ dependencies {
     api "org.jetbrains.kotlinx:kotlinx-coroutines-android:$rootProject.ext.kotlinx_version"
 
     api project(':application:tools')
-    devApi project(':libvlcjni:libvlc')
+    devApi "org.videolan.android:libvlc-all:$rootProject.ext.libvlcVersion"
     devApi project(':medialibrary')
     debugApi "org.videolan.android:libvlc-all:$rootProject.ext.libvlcVersion"
     debugApi "org.videolan.android:medialibrary-all:$rootProject.ext.medialibraryVersion"

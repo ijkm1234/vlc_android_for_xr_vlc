@@ -1,6 +1,7 @@
+// Modified for XRVLC by XRVLC contributors on 2026-08-16.
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
-    ext.android_plugin_version = '8.13.2'
+    ext.android_plugin_version = '8.3.2'
     ext.kotlin_version = '2.1.20'
     ext.kotlinx_version = '1.7.1'
     repositories {
@@ -8,12 +9,14 @@ buildscript {
         google()
         mavenCentral()
         mavenLocal()
+        maven { url "https://jitpack.io" }
    }
     dependencies {
         classpath "com.android.tools.build:gradle:$android_plugin_version"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
         classpath 'com.vanniktech:gradle-maven-publish-plugin:0.34.0'
+        classpath 'com.github.shenghua-ok:fat-aar-android:1.4.6'
     }
 }
 
@@ -55,8 +58,9 @@ ext {
     // VLC 3 needs to stick to NDK21 which is the last one supporting Android API 17
     toolchainNdkVersion = properties.getProperty('android.ndkFullVersion') ?: (vlcMajorVersion == 3 ? '21.4.7075529' : '28.2.13676358')
     tooclchainNdkPath = properties.getProperty('android.ndkPath')
-    targetSdkVersion = 36
-    compileSdkVersion = 36 // Dockers: 3.0=36 / 4.0=36
+    targetSdkVersion = 34
+    compileSdkVersion = 34 // Dockers: 3.0=36 / 4.0=36
+    buildToolsVersion = '34.0.0'
     desugarLib = '2.0.4'
     androidxLegacyVersion = '1.0.0'
     androidxCoreVersion = '1.12.0'

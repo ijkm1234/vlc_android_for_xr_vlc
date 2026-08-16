@@ -3,6 +3,7 @@
  * MediaWrapper.java
  *****************************************************************************
  * Copyright © 2019 VLC authors and VideoLAN
+ * Modified for XRVLC by XRVLC contributors on 2026-08-16.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by
@@ -755,6 +756,17 @@ public abstract class MediaWrapper extends MediaLibraryItem implements Parcelabl
     @Nullable
     public IMedia.Slave[] getSlaves() {
         return mSlaves;
+    }
+
+    public void addSlave(IMedia.Slave slave) {
+        if (mSlaves == null) {
+            mSlaves = new IMedia.Slave[] { slave };
+        } else {
+            IMedia.Slave[] newSlaves = new IMedia.Slave[mSlaves.length + 1];
+            System.arraycopy(mSlaves, 0, newSlaves, 0, mSlaves.length);
+            newSlaves[mSlaves.length] = slave;
+            mSlaves = newSlaves;
+        }
     }
 
     @Override

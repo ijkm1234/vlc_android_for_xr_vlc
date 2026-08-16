@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Modified for XRVLC by XRVLC contributors on 2026-08-16. -->
 
 <androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
         android:key="optional_features"
-        android:title="@string/optional_features" />
+        android:title="@string/optional_features">
+
+</androidx.preference.PreferenceScreen>

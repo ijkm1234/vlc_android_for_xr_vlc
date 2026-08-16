@@ -1,3 +1,5 @@
+// Modified for XRVLC by XRVLC contributors on 2026-08-16.
+
 pluginManagement {
     repositories {
         google()
@@ -6,16 +8,15 @@ pluginManagement {
 }
 
 plugins {
-    id("com.android.settings") version '8.13.2'
+    id("com.android.settings") version '8.3.2'
 }
 
 def vlcMajorVersion = hasProperty('forceVlc4') && getProperty('forceVlc4') ? 4 : 3
 
 android {
     minSdk = vlcMajorVersion == 3 ? 17 : 23
-    targetSdk = 36
-    compileSdk = 36 // Dockers: 3.0=36 / 4.0=36
-    buildToolsVersion = '36.0.0'
+    compileSdk = 34 // Dockers: 3.0=36 / 4.0=36
+    buildToolsVersion = '34.0.0'
 }
 
 include ':libvlcjni:libvlc', ':medialibrary'

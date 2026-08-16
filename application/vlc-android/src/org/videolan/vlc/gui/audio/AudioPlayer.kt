@@ -2,6 +2,7 @@
  * AudioPlayer.kt
  *
  * Copyright © 2011-2019 VLC authors and VideoLAN
+ * Modified for XRVLC by XRVLC contributors on 2026-08-16.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -794,6 +795,10 @@ class AudioPlayer : Fragment(), PlaylistAdapter.IPlayer, TextWatcher, IAudioPlay
     fun onPlaylistSwitchClick(@Suppress("UNUSED_PARAMETER") view: View) {
         switchShowCover()
         settings.putSingle(KEY_AUDIO_PLAYER_SHOW_COVER, isShowingCover())
+    }
+
+    fun onCollapsePlayerClick(@Suppress("UNUSED_PARAMETER") view: View?) {
+        (activity as? AudioPlayerContainerActivity)?.slideDownAudioPlayer()
     }
 
     fun onShuffleClick(@Suppress("UNUSED_PARAMETER") view: View) {

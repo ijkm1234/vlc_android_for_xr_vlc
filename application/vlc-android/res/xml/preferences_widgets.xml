@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Modified for XRVLC by XRVLC contributors on 2026-08-16. -->
 <!--
   ~ *************************************************************************
   ~  preferences_widgets.xml
@@ -59,12 +60,10 @@
         <com.jaredrummler.android.colorpicker.ColorPreferenceCompat
                 android:defaultValue="@color/black"
                 android:key="background_color"
-                app:cpv_showAlphaSlider="false"
                 android:title="@string/widget_background"/>
         <com.jaredrummler.android.colorpicker.ColorPreferenceCompat
                 android:defaultValue="@color/black"
                 android:key="foreground_color"
-                app:cpv_showAlphaSlider="false"
                 android:title="@string/widget_foreground"/>
 
         <CheckBoxPreference

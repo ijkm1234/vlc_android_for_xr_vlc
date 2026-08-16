@@ -2,6 +2,7 @@
  *  SlaveRepositoryTest.kt
  * ****************************************************************************
  * Copyright © 2018 VLC authors and VideoLAN
+ * Modified for XRVLC by XRVLC contributors on 2026-08-16.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +36,7 @@ import org.mockito.Mockito.`when`
 import org.powermock.api.mockito.PowerMockito
 import org.powermock.core.classloader.annotations.PrepareForTest
 import org.powermock.modules.junit4.PowerMockRunner
+import org.videolan.libvlc.interfaces.IMedia
 import org.videolan.vlc.database.MediaDatabase
 import org.videolan.vlc.database.SlaveDao
 import org.videolan.vlc.mediadb.models.Slave
@@ -77,5 +79,22 @@ class SlaveRepositoryTest {
         assertThat(slave.uri, `is`(fakeSlave.uri))
         assertThat(slave.type, `is`(fakeSlave.type))
         assertThat(slave.priority, `is`(fakeSlave.priority))
+    }
+
+    @Test fun saveSlavesForMediaPath_insertsAllSlavesForThatPath() = runBlocking {
+        val mediaPath = "smb://server/share/video.mkv"
+        val slaves = arrayOf(
+                IMedia.Slave(IMedia.Slave.Type.Subtitle, 2, "smb://server/share/video.en.srt"),
+                IMedia.Slave(IMedia.Slave.Type.Subtitle, 2, "smb://server/share/video.zh.ass")
+        )
+
+        slaveRepository.saveSlaves(mediaPath, slaves)
+
+        val inserted = argumentCaptor<Array<Slave>>()
+        verify(slaveDao).insert(inserted.capture() ?: uninitialized())
+        assertThat(inserted.value.toList(), `is`(listOf(
+                Slave(mediaPath, IMedia.Slave.Type.Subtitle, 2, "smb://server/share/video.en.srt"),
+                Slave(mediaPath, IMedia.Slave.Type.Subtitle, 2, "smb://server/share/video.zh.ass")
+        )))
     }
 }

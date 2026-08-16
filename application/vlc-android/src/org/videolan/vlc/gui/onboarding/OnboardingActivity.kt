@@ -1,3 +1,5 @@
+// Modified for XRVLC by XRVLC contributors on 2026-08-16.
+
 package org.videolan.vlc.gui.onboarding
 
 import android.Manifest
@@ -37,6 +39,8 @@ import org.videolan.tools.Settings
 import org.videolan.vlc.BuildConfig
 import org.videolan.vlc.MediaParsingService
 import org.videolan.vlc.R
+import org.videolan.vlc.bridge.UnityBridgeContract
+import org.videolan.vlc.bridge.UnityMessageDispatcher
 import org.videolan.vlc.gui.MainActivity
 import org.videolan.vlc.gui.helpers.hf.NotificationDelegate.Companion.getNotificationPermission
 import org.videolan.vlc.gui.helpers.hf.StoragePermissionsDelegate.Companion.getStoragePermission
@@ -44,6 +48,8 @@ import org.videolan.vlc.util.Permissions
 
 
 const val ONBOARDING_DONE_KEY = "app_onboarding_done"
+const val XR_ONBOARDING_VERSION_KEY = "xr_onboarding_version"
+const val CURRENT_XR_ONBOARDING_VERSION = 1
 
 class OnboardingActivity : AppCompatActivity(), OnboardingFragmentListener {
     private lateinit var nextButton: Button
@@ -69,6 +75,11 @@ class OnboardingActivity : AppCompatActivity(), OnboardingFragmentListener {
             WindowInsetsCompat.CONSUMED
         }
         showFragment(viewModel.currentFragment)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        UnityMessageDispatcher.sendToLibraryLauncher(UnityBridgeContract.Method.VLC_ACTIVITY_READY)
     }
 
     fun showFragment(fragmentName:FragmentName, backward:Boolean = false) {
@@ -108,19 +119,22 @@ class OnboardingActivity : AppCompatActivity(), OnboardingFragmentListener {
     }
 
     override fun onDone() {
+        val firstRun = intent.getBooleanExtra(EXTRA_FIRST_RUN, true)
+        val upgrade = intent.getBooleanExtra(EXTRA_UPGRADE, true)
         setResult(RESULT_RESTART)
         Settings.getInstance(this).edit {
             putInt(PREF_FIRST_RUN, BuildConfig.VLC_VERSION_CODE)
             putBoolean(ONBOARDING_DONE_KEY, true)
+            putInt(XR_ONBOARDING_VERSION_KEY, CURRENT_XR_ONBOARDING_VERSION)
             putInt(KEY_MEDIALIBRARY_SCAN, if (viewModel.scanStorages) ML_SCAN_ON else ML_SCAN_OFF)
             putInt(KEY_FRAGMENT_ID, if (viewModel.scanStorages) R.id.nav_video else R.id.nav_directories)
             putString(KEY_APP_THEME, viewModel.theme.toString())
         }
         if (!viewModel.scanStorages) MediaParsingService.preselectedStorages.clear()
-        startMedialibrary(firstRun = true, upgrade = true, parse = viewModel.scanStorages)
+        startMedialibrary(firstRun = firstRun, upgrade = upgrade, parse = viewModel.scanStorages)
         val intent = Intent(this@OnboardingActivity, MainActivity::class.java)
-            .putExtra(EXTRA_FIRST_RUN, true)
-            .putExtra(EXTRA_UPGRADE, true)
+            .putExtra(EXTRA_FIRST_RUN, firstRun)
+            .putExtra(EXTRA_UPGRADE, upgrade)
         startActivity(intent)
         finish()
     }
@@ -200,4 +214,10 @@ enum class FragmentName {
     THEME
 }
 
-fun Activity.startOnboarding() = startActivityForResult(Intent(this, OnboardingActivity::class.java), ACTIVITY_RESULT_PREFERENCES)
+fun Activity.startOnboarding(firstRun: Boolean, upgrade: Boolean) =
+    startActivityForResult(
+        Intent(this, OnboardingActivity::class.java)
+            .putExtra(EXTRA_FIRST_RUN, firstRun)
+            .putExtra(EXTRA_UPGRADE, upgrade),
+        ACTIVITY_RESULT_PREFERENCES
+    )
