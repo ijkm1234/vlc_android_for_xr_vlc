@@ -171,9 +171,16 @@ dependencies {
     devApi project(':medialibrary')
     debugApi project(':libvlcjni:libvlc')
     debugApi "org.videolan.android:medialibrary-all:$rootProject.ext.medialibraryVersion"
-    releaseApi "org.videolan.android:libvlc-all:$rootProject.ext.libvlcVersion"
+    if (project.hasProperty('xrFatAar')) {
+        releaseApi project(':libvlcjni:libvlc')
+        signedReleaseApi project(':libvlcjni:libvlc')
+        releaseEmbed project(':libvlcjni:libvlc')
+        signedReleaseEmbed project(':libvlcjni:libvlc')
+    } else {
+        releaseApi "org.videolan.android:libvlc-all:$rootProject.ext.libvlcVersion"
+        signedReleaseApi "org.videolan.android:libvlc-all:$rootProject.ext.libvlcVersion"
+    }
     releaseApi "org.videolan.android:medialibrary-all:$rootProject.ext.medialibraryVersion"
-    signedReleaseApi "org.videolan.android:libvlc-all:$rootProject.ext.libvlcVersion"
     signedReleaseApi "org.videolan.android:medialibrary-all:$rootProject.ext.medialibraryVersion"
     debugEmbed project(':libvlcjni:libvlc')
     embed project(path: ':application:tools', configuration: 'default')
