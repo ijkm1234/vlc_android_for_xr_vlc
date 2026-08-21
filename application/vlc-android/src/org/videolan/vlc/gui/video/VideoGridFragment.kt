@@ -763,7 +763,11 @@ class VideoGridFragment : MediaBrowserFragment<VideosViewModel>(), SwipeRefreshL
                     multiSelectHelper.toggleSelection(position)
                     invalidateActionMode()
                 } else {
-                    MediaUtils.openMedia(requireContext(), item)
+                    if (viewModel.folder != null || viewModel.group != null) {
+                        viewModel.playVideo(activity, item, position, forceAll = true)
+                    } else {
+                        MediaUtils.openMedia(requireContext(), item)
+                    }
                 }
             }
             is Folder -> {

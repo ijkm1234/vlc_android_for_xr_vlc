@@ -88,7 +88,7 @@ class RecommendationsService : IntentService("RecommendationService"), Coroutine
                         .setColor(ContextCompat.getColor(this, R.color.orange800))
                         .setCategory(Notification.CATEGORY_RECOMMENDATION)
                         .setLargeIcon(BitmapUtil.getPicture(mw))
-                        .setSmallIcon(R.drawable.icon)
+                        .setSmallIcon(R.drawable.ic_xrvlc_monochrome)
                         .setContentIntent(buildPendingIntent(mw, id))
         ).build()
         // post the recommendation to the NotificationManager

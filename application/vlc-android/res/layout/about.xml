@@ -24,7 +24,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@drawable/vlc_for_pico_about_icon" />
+            app:srcCompat="@drawable/xrvlc_app_icon" />
 
         <TextView
             android:id="@+id/about_app_name"

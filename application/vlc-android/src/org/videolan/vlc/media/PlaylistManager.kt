@@ -563,6 +563,15 @@ class PlaylistManager(val service: PlaybackService) : MediaWrapperList.EventList
 
         android.util.Log.e("Unity", "==== [DEBUG_VLC_CALLSTACK] Before playIndex condition: player.hasRenderer = ${player.hasRenderer}, isVideoPlaying = $isVideoPlaying, videoBackground = $videoBackground, forceAudio = ${mw.hasFlag(MediaWrapper.MEDIA_FORCE_AUDIO)} ====")
         if (mw.type==MediaWrapper.TYPE_VIDEO&&!forcePlay){
+            val switchingFromAudio = !player.isVideoPlaying() && !player.canSwitchToVideo()
+            if (switchingFromAudio && (player.isPlaying() || player.isPaused())) {
+                Log.e(
+                    "XR_CONTROL",
+                    "PlaylistManager.playIndex stopAudioBeforeUnityVideo uri=${mw.uri} " +
+                        "index=$currentIndex playerWasPlaying=${player.isPlaying()} playerWasPaused=${player.isPaused()}"
+                )
+                player.stop()
+            }
             Log.e("XR_CONTROL", "PlaylistManager.playIndex route=UnityStartPlay uri=${mw.uri} index=$currentIndex forcePlay=$forcePlay flags=${mw.flags} hasPaused=${mw.hasFlag(MediaWrapper.MEDIA_PAUSED)} ${describeControlState()}")
             Log.e(TAG, "==== [XR_FROM_START] playIndex defers to Unity StartPlay uri=${mw.uri} index=$currentIndex hasFromStart=${mw.hasFlag(MediaWrapper.MEDIA_FROM_START)} time=${mw.time} forcePlay=$forcePlay ====")
             MediaUtils.showUnityView(ctx)
