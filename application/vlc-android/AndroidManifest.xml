@@ -83,7 +83,7 @@
             android:resource="@drawable/ic_auto_notif_audio"/>
         <meta-data
             android:name="com.google.android.gms.car.notification.SmallIcon"
-            android:resource="@drawable/icon"/>
+            android:resource="@drawable/ic_xrvlc_monochrome"/>
         <meta-data
             android:name="android.max_aspect"
             android:value="3.0"/>

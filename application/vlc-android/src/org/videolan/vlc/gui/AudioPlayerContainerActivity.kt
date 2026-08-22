@@ -137,7 +137,6 @@ open class AudioPlayerContainerActivity : BaseActivity(), KeycodeListener, Sched
     private lateinit var resumeCard: Snackbar
     private var preventRescan = false
     private var showAudioPlayerWhenResumed = false
-    private var expandAudioPlayerOnNextShow = false
 
     private var playerShown = false
     val tipsDelegate: AudioTipsDelegate by lazy(LazyThreadSafetyMode.NONE) { AudioTipsDelegate(this) }
@@ -653,19 +652,7 @@ open class AudioPlayerContainerActivity : BaseActivity(), KeycodeListener, Sched
             if (state == STATE_HIDDEN) state = STATE_COLLAPSED
             isHideable = false
             if (tipsDelegate.currentTip == null && playlistTipsDelegate.currentTip == null) lock(false)
-            if (expandAudioPlayerOnNextShow) {
-                state = STATE_EXPANDED
-                audioPlayer.onSlide(1f)
-                audioPlayerContainer.post {
-                    if (::playerBehavior.isInitialized && playerBehavior.state == STATE_EXPANDED) audioPlayer.onSlide(1f)
-                }
-            }
         }
-        expandAudioPlayerOnNextShow = false
-    }
-
-    fun requestExpandAudioPlayerOnNextShow() {
-        expandAudioPlayerOnNextShow = true
     }
 
     /**
@@ -701,7 +688,6 @@ open class AudioPlayerContainerActivity : BaseActivity(), KeycodeListener, Sched
     }
 
     private fun hideAudioPlayerImpl() {
-        expandAudioPlayerOnNextShow = false
         if (!isAudioPlayerReady) return
         playerBehavior.isHideable = true
         playerBehavior.state = STATE_HIDDEN

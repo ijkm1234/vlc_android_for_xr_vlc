@@ -116,25 +116,27 @@ class StoragePermissionsDelegate : BaseHeadlessFragment() {
                 return@registerForActivityResult
             }
             when (askedPermission) {
-                Permissions.PERMISSION_STORAGE_TAG, Permissions.MANAGE_EXTERNAL_STORAGE -> {
-                    // If request is cancelled, the result arrays are empty.
-                    if(activity == null) return@registerForActivityResult
-                    if (isGranted || isExternalStorageManager()) {
-                        storageAccessGranted.value = true
-                        model.complete(true)
-                        exit()
-                        return@registerForActivityResult
-                    }
-                    storageAccessGranted.value = false
-                    if (model.permissionPending) model.deferredGrant.complete(false)
-                    exit()
-                }
+                Permissions.PERMISSION_STORAGE_TAG ->
+                    completeStorageAccess(isGranted || isExternalStorageManager())
                 Permissions.PERMISSION_WRITE_STORAGE_TAG -> {
-                    model.deferredGrant.complete(isGranted)
+                    model.complete(isGranted)
                     exit()
                 }
             }
         }
+
+    private val allFilesAccessLauncher =
+        registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()) {
+            if (activity == null) return@registerForActivityResult
+            completeStorageAccess(isExternalStorageManager())
+        }
+
+    private fun completeStorageAccess(granted: Boolean) {
+        storageAccessGranted.value = granted
+        model.complete(granted)
+        exit()
+    }
 
     private fun requestStorageAccess(write: Boolean) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !askOnlyRead) {
@@ -159,10 +161,10 @@ class StoragePermissionsDelegate : BaseHeadlessFragment() {
     }
 
     private fun askAllAccessPermission(intent: Intent) {
-        val code = android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION
-        askedPermission = Permissions.MANAGE_EXTERNAL_STORAGE
-        activityResultLauncher.launch(code)
-        startActivity(intent)
+        // This Settings action is not a runtime permission. Requesting it through
+        // RequestPermission creates a competing PICO VR permission task and hides
+        // the actual settings panel on the app's virtual display.
+        allFilesAccessLauncher.launch(intent)
     }
 
     companion object {

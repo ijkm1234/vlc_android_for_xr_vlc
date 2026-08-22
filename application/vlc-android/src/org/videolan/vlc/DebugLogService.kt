@@ -143,7 +143,7 @@ class DebugLogService : Service(), Logcat.Callback, Runnable {
         val builder = NotificationCompat.Builder(this, NotificationHelper.VLC_DEBUG_CHANNEL)
         builder.setContentTitle(resources.getString(R.string.log_service_title))
         builder.setContentText(resources.getString(R.string.log_service_text))
-        builder.setSmallIcon(R.drawable.ic_stat_vlc)
+        builder.setSmallIcon(R.drawable.ic_xrvlc_monochrome)
         builder.setContentIntent(pi)
         val notification = builder.build()
         startForegroundCompat(3, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)

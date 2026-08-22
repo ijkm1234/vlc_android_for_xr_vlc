@@ -68,6 +68,7 @@ import org.videolan.vlc.R
 import org.videolan.vlc.StartActivity
 import org.videolan.vlc.gui.helpers.AudioUtil
 import org.videolan.vlc.gui.helpers.BitmapUtil
+import org.videolan.vlc.gui.helpers.getBitmapFromDrawable
 import org.videolan.vlc.gui.helpers.getColoredBitmapFromColor
 import org.videolan.vlc.media.Progress
 import org.videolan.vlc.repository.WidgetRepository
@@ -536,7 +537,7 @@ class MiniPlayerAppWidgetProvider : AppWidgetProvider() {
                 WidgetType.MACRO -> 128.dp
                 else -> 48.dp
             }
-            views.setImageViewBitmap(R.id.app_icon, context.getColoredBitmapFromColor(R.drawable.ic_widget_icon, foregroundColor, iconSize, iconSize))
+            views.setImageViewBitmap(R.id.app_icon, context.getBitmapFromDrawable(R.drawable.xrvlc_app_icon, iconSize, iconSize))
             views.setViewVisibility(R.id.cover, View.INVISIBLE)
             views.setViewVisibility(R.id.app_icon, View.VISIBLE)
             views.setViewVisibility(R.id.separator, View.VISIBLE)

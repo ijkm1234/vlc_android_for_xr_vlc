@@ -188,7 +188,6 @@ object MediaUtils {
 
     fun openMedia(context: Context?, media: MediaWrapper?) {
         if (media == null || context == null) return
-        requestExpandedAudioPlayerForUserSelection(context, media)
         SuspendDialogCallback(context) { service -> service.load(media) }
     }
 
@@ -372,7 +371,6 @@ object MediaUtils {
         SuspendDialogCallback(context) { service ->
             val realPos = if (shuffle) SecureRandom().nextInt(list.size)
             else position
-            requestExpandedAudioPlayerForUserSelection(context, list.getOrNull(realPos))
             service.load(list, realPos)
             if (shuffle && !service.isShuffling) service.shuffle()
         }
@@ -388,16 +386,8 @@ object MediaUtils {
                 val slaveUris = media.slaves?.joinToString { it.uri.replace(Regex("://[^/@]+@"), "://***@") }
                 Log.e(TAG, "[PlaylistSlavesCheck] openPlaylist loaded playlistId=$playlistId itemIndex=$index title=${media.title} location=${media.location.replace(Regex("://[^/@]+@"), "://***@")} slavesNull=${media.slaves == null} slavesCount=${media.slaves?.size ?: 0} slaveUris=$slaveUris")
             }
-            requestExpandedAudioPlayerForUserSelection(context, tracks.getOrNull(position))
             service.load(tracks, position)
             if (shuffle && !service.isShuffling) service.shuffle()
-        }
-    }
-
-    private fun requestExpandedAudioPlayerForUserSelection(context: Context?, media: MediaWrapper?) {
-        if (context !is AudioPlayerContainerActivity || media == null) return
-        if (media.type == MediaWrapper.TYPE_AUDIO || media.hasFlag(MediaWrapper.MEDIA_FORCE_AUDIO)) {
-            context.requestExpandAudioPlayerOnNextShow()
         }
     }
 
