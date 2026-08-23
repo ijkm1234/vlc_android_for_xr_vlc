@@ -1406,6 +1406,7 @@
     <string name="xr_button_b">B 键</string>
     <string name="xr_action_none">无操作</string>
     <string name="xr_action_toggle_2x_speed">切换 2 倍速</string>
-    <string name="xr_action_toggle_subtitle">切换字幕</string>
+    <string name="xr_action_toggle_subtitle">字幕显隐</string>
+    <string name="xr_action_toggle_passthrough_background">透视背景</string>
     <string name="xr_action_reset_screen_transform">重置画面位置</string>
 </resources>

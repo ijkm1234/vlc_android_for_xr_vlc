@@ -20,6 +20,7 @@ import org.videolan.vlc.R
 private const val ACTION_NONE = "none"
 private const val ACTION_TOGGLE_2X_SPEED = "toggle_2x_speed"
 private const val ACTION_TOGGLE_SUBTITLE = "toggle_subtitle"
+private const val ACTION_TOGGLE_PASSTHROUGH_BACKGROUND = "toggle_passthrough_background"
 private const val ACTION_RESET_SCREEN_TRANSFORM = "reset_screen_transform"
 
 private const val BUTTON_RIGHT_STICK_CLICK = "right_stick_click"
@@ -97,13 +98,16 @@ class PreferencesXRController : BasePreferenceFragment() {
     private fun defaultMappings() = linkedMapOf(
         BUTTON_RIGHT_STICK_CLICK to ACTION_RESET_SCREEN_TRANSFORM,
         BUTTON_LEFT_STICK_CLICK to ACTION_RESET_SCREEN_TRANSFORM,
-        BUTTON_B to ACTION_TOGGLE_SUBTITLE,
-        BUTTON_Y to ACTION_TOGGLE_SUBTITLE
+        BUTTON_B to ACTION_TOGGLE_PASSTHROUGH_BACKGROUND,
+        BUTTON_Y to ACTION_TOGGLE_PASSTHROUGH_BACKGROUND
     )
 
     /** 拒绝未知操作字符串，让旧版本或损坏 JSON 变成安全的无操作。 */
     private fun normalizeAction(action: String?) = when (action) {
-        ACTION_TOGGLE_2X_SPEED, ACTION_TOGGLE_SUBTITLE, ACTION_RESET_SCREEN_TRANSFORM -> action
+        ACTION_TOGGLE_2X_SPEED,
+        ACTION_TOGGLE_SUBTITLE,
+        ACTION_TOGGLE_PASSTHROUGH_BACKGROUND,
+        ACTION_RESET_SCREEN_TRANSFORM -> action
         else -> ACTION_NONE
     }
 }

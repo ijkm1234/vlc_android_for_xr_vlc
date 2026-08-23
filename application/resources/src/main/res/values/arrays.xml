@@ -733,6 +733,7 @@
         <item>@string/xr_action_none</item>
         <item>@string/xr_action_toggle_2x_speed</item>
         <item>@string/xr_action_toggle_subtitle</item>
+        <item>@string/xr_action_toggle_passthrough_background</item>
         <item>@string/xr_action_reset_screen_transform</item>
     </string-array>
 
@@ -740,6 +741,7 @@
         <item>none</item>
         <item>toggle_2x_speed</item>
         <item>toggle_subtitle</item>
+        <item>toggle_passthrough_background</item>
         <item>reset_screen_transform</item>
     </string-array>
 

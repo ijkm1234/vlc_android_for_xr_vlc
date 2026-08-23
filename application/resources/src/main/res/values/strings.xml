@@ -1465,5 +1465,6 @@
     <string name="xr_action_none">None</string>
     <string name="xr_action_toggle_2x_speed">Toggle 2x speed</string>
     <string name="xr_action_toggle_subtitle">Toggle subtitles</string>
+    <string name="xr_action_toggle_passthrough_background">Passthrough background</string>
     <string name="xr_action_reset_screen_transform">Reset screen position</string>
 </resources>
