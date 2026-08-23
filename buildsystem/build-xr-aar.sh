@@ -23,6 +23,10 @@ case "$aar_variant" in
 esac
 
 aar_path="$vlc_root/application/vlc-android/build/outputs/aar/vlc-android-$aar_variant.aar"
+source_check_args=()
+if [[ "${VLC_ANDROID_USE_LOCAL:-0}" == "1" ]]; then
+    source_check_args=(-b)
+fi
 
 read_property() {
     sed -n "s/^$1=//p" "$local_properties" | head -n 1
@@ -59,7 +63,8 @@ cd "$vlc_root"
 
 # Missing pinned sources are downloaded once by compile.sh. Existing Git
 # checkouts, contrib tarballs, and native build outputs are reused.
-./buildsystem/compile.sh -a arm64-v8a -l "${compile_variant_args[@]}"
+./buildsystem/compile.sh -a arm64-v8a -l \
+    "${compile_variant_args[@]}" "${source_check_args[@]}"
 
 GRADLE_ABI=arm64-v8a ./gradlew \
     -PxrFatAar=true \

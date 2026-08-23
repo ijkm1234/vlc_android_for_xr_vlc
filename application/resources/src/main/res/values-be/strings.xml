@@ -722,13 +722,13 @@
     <string name="device_dialog_message">Вы толькі што падключылі да TV-прыстаўкі новы накапляльнік. Адкрыць яго праз VLC?</string>
     <string name="videos_groups_title">Групы відэа</string>
     <string name="removed_from_playlist_anonymous">Элементы, выдаленыя з плэйліста</string>
-    <string name="welcome_title">Вітаем у VLC!</string>
-    <string name="medialibrary_scan_explanation">VLC можа аўтаматычна даследаваць прыладу і ўпарадкоўваць медыятэку.</string>
+    <string name="welcome_title">Вітаем у XRLVLC!</string>
+    <string name="medialibrary_scan_explanation">XRLVLC можа аўтаматычна даследаваць прыладу і ўпарадкоўваць медыятэку.</string>
     <string name="onboarding_theme_title">Адчувайце сябе як дома</string>
     <string name="done">Гатова</string>
     <string name="onboarding_scan_title">Аўтавыяўленне медыяфайлаў</string>
-    <string name="onboarding_all_set">VLC усё наладзіў!</string>
-    <string name="onboarding_scanning_enable">Дазволіць VLC сканаваць прыладу, каб знаходзіць медыяфайлы</string>
+    <string name="onboarding_all_set">XRLVLC усё наладзіў!</string>
+    <string name="onboarding_scanning_enable">Дазволіць XRLVLC сканаваць прыладу, каб знаходзіць медыяфайлы</string>
     <string name="onboarding_scan_customize">Хачу выбраць якія папкі будуць сканавацца</string>
     <string name="button_medialibrary_preferences">Перайсці ў налады медыятэкі</string>
     <string name="light_theme">Светлая тэма</string>

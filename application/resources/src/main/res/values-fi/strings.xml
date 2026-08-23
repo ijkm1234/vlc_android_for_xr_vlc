@@ -893,22 +893,22 @@ Voit toistaa vain suoratoistoa tai verkkomediaa</string>
     <string name="video_remote_enable">Vaihda kaukosäätötilaan</string>
     <string name="video_remote_disable">Kopioi näyttö</string>
     <string name="removed_from_playlist_anonymous">Kohteet poistettiin soittolistalta</string>
-    <string name="welcome_title">Tervetuloa, tämä on VLC!</string>
+    <string name="welcome_title">Tervetuloa, tämä on XRLVLC!</string>
     <string name="welcome_subtitle">Ilmainen ja avoimen lähdekoodin multimediasoitin</string>
-    <string name="permission_media">VLC tarvitsee luvan käyttääkseen laitteesi mediaa</string>
+    <string name="permission_media">XRLVLC tarvitsee luvan käyttääkseen laitteesi mediaa</string>
     <string name="permission_video">VLC tarvitsee luvan käyttääkseen videomediaa laitteellasi</string>
     <string name="permission_audio">VLC tarvitsee luvan käyttääkseen audiomediaa laitteellasi</string>
-    <string name="medialibrary_scan_explanation">VLC voi hakea laitteesi median automaattisesti ja järjestää sen kokoelmaksi.</string>
+    <string name="medialibrary_scan_explanation">XRLVLC voi hakea laitteesi median automaattisesti ja järjestää sen kokoelmaksi.</string>
     <string name="player_title_fd_warning">Ilman tallennuslupaa VLC ei voi noutaa median nimeä eikä tallentaa edistymistä</string>
     <string name="onboarding_theme_title">Ole kuin kotonasi</string>
     <string name="done">Valmis</string>
     <string name="onboarding_scan_title">Löydä media automaattisesti</string>
-    <string name="onboarding_all_set">VLC, kaikki on asetettu!</string>
+    <string name="onboarding_all_set">XRLVLC, kaikki on asetettu!</string>
     <string name="onboarding_permission_given">Voit nyt löytää mediasi automaattisesti, käyttää ulkoista tekstitystä, sekä toistaa suoratoistoa tai verkkomediaa</string>
-    <string name="daynight_system_explanation">VLC käyttää automaattisesti tummaa tilaa järjestelmän asetusten kanssa</string>
-    <string name="daynight_legacy_explanation">VLC siirtyy yötilaan sopivana ajankohtana automaattisesti</string>
-    <string name="onboarding_scanning_enable">Anna VLC:n etsiä mediasisältöä</string>
-    <string name="onboarding_scan_customize">Haluan valita, mitkä kansiot VLC tarkistaa</string>
+    <string name="daynight_system_explanation">XRLVLC käyttää automaattisesti tummaa tilaa järjestelmän asetusten kanssa</string>
+    <string name="daynight_legacy_explanation">XRLVLC siirtyy yötilaan sopivana ajankohtana automaattisesti</string>
+    <string name="onboarding_scanning_enable">Anna XRLVLC:n etsiä mediasisältöä</string>
+    <string name="onboarding_scan_customize">Haluan valita, mitkä kansiot XRLVLC tarkistaa</string>
     <string name="button_medialibrary_preferences">Siirry mediakirjaston asetuksiin</string>
     <string name="light_theme">Kirkas teema</string>
     <string name="add">Lisää</string>
@@ -1178,9 +1178,9 @@ Voit toistaa vain suoratoistoa tai verkkomediaa</string>
     <string name="lock_use_sensor_summary">Kun suunta on lukittu, salli anturin käänteinen suunta</string>
     <string name="start">Aloita</string>
     <string name="notification_permission">Ilmoitusten lupa</string>
-    <string name="notification_permission_explanation">VLC tarvitsee luvan näyttääkseen ilmoituksia.
+    <string name="notification_permission_explanation">XRLVLC tarvitsee luvan näyttääkseen ilmoituksia.
 Sovellus ilmoittaa sinulle vain, kun se hakee mediaa tai käyttää mukautettua kuva kuvassa videota.
-Kieltäminen ei estä VLC:tä toimimasta, mutta ilmoitukset piilotetaan.</string>
+Kieltäminen ei estä XRLVLC:tä toimimasta, mutta ilmoitukset piilotetaan.</string>
     <string name="permission">Luvat</string>
     <string name="permission_no_access">Ei pääsyä tiedostoihin</string>
     <string name="permissions">Luvat</string>
@@ -1352,7 +1352,7 @@ Anna ilmoituksissa näkyvä koodi</string>
     <string name="ra_otp_subtitle">Jos se olet sinä, kirjoita tämä koodi toiseen laitteeseen</string>
     <string name="ra_otp_not_me">Se en ollut minä</string>
 
-    <string name="ra_onboarding_welcome_desc">Tervetuloa VLC Android etäkäyttöön
+    <string name="ra_onboarding_welcome_desc">Tervetuloa XRLVLC Android etäkäyttöön
 Ottamalla tämän käyttöön voit ohjata toistoa ja muuta mukavaa</string>
     <string name="ra_onboarding_how_title">Ohjaa laitettasi</string>
     <string name="ra_onboarding_how_desc">Ohjaa toistoa, lähetä tai nouda tiedostoja ja muuta mukavaa</string>

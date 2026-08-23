@@ -537,7 +537,7 @@ class MiniPlayerAppWidgetProvider : AppWidgetProvider() {
                 WidgetType.MACRO -> 128.dp
                 else -> 48.dp
             }
-            views.setImageViewBitmap(R.id.app_icon, context.getBitmapFromDrawable(R.drawable.xrvlc_app_icon, iconSize, iconSize))
+            views.setImageViewBitmap(R.id.app_icon, context.getBitmapFromDrawable(R.drawable.vlc_for_pico_about_icon, iconSize, iconSize))
             views.setViewVisibility(R.id.cover, View.INVISIBLE)
             views.setViewVisibility(R.id.app_icon, View.VISIBLE)
             views.setViewVisibility(R.id.separator, View.VISIBLE)

@@ -2,7 +2,7 @@
 
 ## XRVLC application artwork
 
-`application/vlc-android/res/drawable-nodpi/vlc_for_pico_about_icon.png` is
+`application/resources/src/main/res/drawable-nodpi/vlc_for_pico_about_icon.png` is
 XRVLC project artwork supplied by the XRVLC maintainers. Copyright © 2026
 ijkm1234. It is distributed with this repository under GPL-2.0-or-later. It is
 not the official VideoLAN VLC cone artwork.

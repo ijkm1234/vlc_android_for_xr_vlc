@@ -4,4 +4,4 @@
     android:antialias="true"
     android:filter="true"
     android:gravity="center"
-    android:src="@drawable/xrvlc_app_icon" />
+    android:src="@drawable/vlc_for_pico_about_icon" />

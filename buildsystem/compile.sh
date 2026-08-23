@@ -384,6 +384,10 @@ fi
 ############
 diagnostic "Configuring"
 
+if [ "$RELEASE" = 1 ]; then
+    CONFIG_ARGS="$CONFIG_ARGS --release"
+fi
+
 if [ "$AVLC_STATIC_CXX" = 1 ]; then
     CONFIG_ARGS="$CONFIG_ARGS --static-cpp"
 fi

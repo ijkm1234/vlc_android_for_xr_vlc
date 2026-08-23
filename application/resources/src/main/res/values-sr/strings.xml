@@ -288,15 +288,15 @@
 
     <string name="next">Следеће</string>
     <string name="videos_folders_title">Видео-снимци по фасциклама</string>
-    <string name="welcome_title">Добро дошли у VLC!</string>
+    <string name="welcome_title">Добро дошли у XRLVLC!</string>
     <string name="welcome_subtitle">Бесплатан медијски плејер отвореног кода</string>
-    <string name="permission_media">VLC-у је потребна дозвола за приступ медијским датотекама на вашем уређају</string>
-    <string name="medialibrary_scan_explanation">VLC може да аутоматски скенира ваш уређај и направи медијатеку.</string>
+    <string name="permission_media">XRLVLC-у је потребна дозвола за приступ медијским датотекама на вашем уређају</string>
+    <string name="medialibrary_scan_explanation">XRLVLC може да аутоматски скенира ваш уређај и направи медијатеку.</string>
     <string name="onboarding_theme_title">Персонализација</string>
     <string name="done">Готово</string>
     <string name="onboarding_scan_title">Аутоматско проналажење медијских датотека</string>
-    <string name="daynight_system_explanation">VLC ће аутоматски прећи на тамни режим у складу са подешавањима система</string>
-    <string name="daynight_legacy_explanation">VLC ће аутоматски прећи на ноћни режим у одговарајуће време</string>
+    <string name="daynight_system_explanation">XRLVLC ће аутоматски прећи на тамни режим у складу са подешавањима система</string>
+    <string name="daynight_legacy_explanation">XRLVLC ће аутоматски прећи на ноћни режим у одговарајуће време</string>
     <string name="onboarding_scanning_enable">Дозволи скенирање уређаја</string>
     <string name="onboarding_scan_customize">Желим да одаберем фасцикле које ће бити скениране</string>
     <string name="light_theme">Светла тема</string>
