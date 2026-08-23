@@ -3,7 +3,6 @@
 package org.videolan.vlc.media
 
 import android.content.Intent
-import android.net.Uri
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import android.widget.Toast
@@ -15,11 +14,13 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.actor
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -70,7 +71,6 @@ import org.videolan.tools.KEY_PLAYBACK_SPEED_AUDIO_GLOBAL_VALUE
 import org.videolan.tools.KEY_PLAYBACK_SPEED_VIDEO_GLOBAL
 import org.videolan.tools.KEY_PLAYBACK_SPEED_VIDEO_GLOBAL_VALUE
 import org.videolan.tools.KEY_SAVE_INDIVIDUAL_AUDIO_DELAY
-import org.videolan.tools.KEY_SUBTITLE_PREFERRED_LANGUAGE
 import org.videolan.tools.KEY_VIDEO_APP_SWITCH
 import org.videolan.tools.KEY_VIDEO_CONFIRM_RESUME
 import org.videolan.tools.MEDIA_SHUFFLING
@@ -94,10 +94,8 @@ import org.videolan.vlc.R
 import org.videolan.vlc.bridge.PlaybackServiceBridge
 import org.videolan.vlc.bridge.UnityBridgeContract
 import org.videolan.vlc.bridge.UnityMessageDispatcher
-import org.videolan.vlc.getAllTracks
 import org.videolan.vlc.gui.browser.BaseBrowserFragment
 import org.videolan.vlc.gui.video.VideoPlayerActivity
-import org.videolan.vlc.gui.dialogs.adapters.VlcTrack
 import org.videolan.vlc.util.FileUtils
 import org.videolan.vlc.util.awaitMedialibraryStarted
 import org.videolan.vlc.util.isSchemeFD
@@ -109,7 +107,6 @@ import org.videolan.vlc.util.updateWithMLMeta
 import org.videolan.vlc.util.validateLocation
 import java.security.SecureRandom
 import java.util.Calendar
-import java.util.Locale
 import java.util.Stack
 import kotlin.math.max
 
@@ -117,6 +114,7 @@ private const val TAG = "VLC/PlaylistManager"
 private const val PREVIOUS_LIMIT_DELAY = 5000L
 private const val PLAYLIST_AUDIO_REPEAT_MODE_KEY = "audio_repeat_mode"
 private const val PLAYLIST_VIDEO_REPEAT_MODE_KEY = "video_repeat_mode"
+private const val DEFAULT_SUBTITLE_TRACK_SETTLE_DELAY_MS = 750L
 
 class PlaylistManager(val service: PlaybackService) : MediaWrapperList.EventListener, IMedia.EventListener, CoroutineScope {
     private var endReachedFor: String? = null
@@ -147,6 +145,8 @@ class PlaylistManager(val service: PlaybackService) : MediaWrapperList.EventList
             currentPlayedMedia.postValue(mediaList.getMedia(value))
         }
     private var defaultSubtitleTrackApplied = false
+    private var defaultSubtitleTrackSelectionJob: Job? = null
+    private var automaticallySelectedSubtitleTrack: String? = null
     private var nextIndex = -1
     private var prevIndex = -1
     private var previous = Stack<Int>()
@@ -557,7 +557,10 @@ class PlaylistManager(val service: PlaybackService) : MediaWrapperList.EventList
         if (videoBackground) mw.addFlags(MediaWrapper.MEDIA_FORCE_AUDIO)
         if (isBenchmark) mw.addFlags(MediaWrapper.MEDIA_BENCHMARK)
         parsed = false
+        defaultSubtitleTrackSelectionJob?.cancel()
+        defaultSubtitleTrackSelectionJob = null
         defaultSubtitleTrackApplied = false
+        automaticallySelectedSubtitleTrack = null
         player.switchToVideo = false
         if (mw.uri.scheme == "content") withContext(Dispatchers.IO) { MediaUtils.retrieveMediaTitle(mw) }
 
@@ -881,6 +884,10 @@ class PlaylistManager(val service: PlaybackService) : MediaWrapperList.EventList
 
     fun setSpuTrack(index: String) {
         if (!player.setSpuTrack(index)) return
+        defaultSubtitleTrackSelectionJob?.cancel()
+        defaultSubtitleTrackSelectionJob = null
+        defaultSubtitleTrackApplied = true
+        automaticallySelectedSubtitleTrack = null
         val media = getCurrentMedia() ?: return
         if (media.id != 0L) launch(Dispatchers.IO) { media.setStringMeta(MediaWrapper.META_SUBTITLE_TRACK, index) }
     }
@@ -921,8 +928,26 @@ class PlaylistManager(val service: PlaybackService) : MediaWrapperList.EventList
     }
 
     private fun applySubtitleTrackSelection(media: MediaWrapper) {
-        if (applySavedSubtitleTrackIfNeeded(media)) return
-        applyDefaultSubtitleTrackIfNeeded(media)
+        if (applySavedSubtitleTrackIfNeeded(media)) {
+            defaultSubtitleTrackSelectionJob?.cancel()
+            defaultSubtitleTrackSelectionJob = null
+            return
+        }
+        scheduleDefaultSubtitleTrackSelection(media)
+    }
+
+    private fun scheduleDefaultSubtitleTrackSelection(media: MediaWrapper) {
+        if (resolveSavedSubtitleTrack(media) != null) return
+        if (defaultSubtitleTrackApplied && automaticallySelectedSubtitleTrack == null) return
+        if (defaultSubtitleTrackApplied && player.getSpuTrack() != automaticallySelectedSubtitleTrack) return
+
+        defaultSubtitleTrackSelectionJob?.cancel()
+        defaultSubtitleTrackSelectionJob = launch {
+            delay(DEFAULT_SUBTITLE_TRACK_SETTLE_DELAY_MS)
+            if (resolveSavedSubtitleTrack(media) == null)
+                applyDefaultSubtitleTrackIfNeeded(media)
+            defaultSubtitleTrackSelectionJob = null
+        }
     }
 
     private fun applySavedSubtitleTrackIfNeeded(media: MediaWrapper): Boolean {
@@ -931,6 +956,7 @@ class PlaylistManager(val service: PlaybackService) : MediaWrapperList.EventList
 
         if (player.setSpuTrack(savedTrack)) {
             defaultSubtitleTrackApplied = true
+            automaticallySelectedSubtitleTrack = null
             Log.e(TAG, "Saved subtitle track restored by VLC path: $savedTrack")
         } else {
             Log.e(TAG, "Saved subtitle track not available yet; will retry on ESAdded: $savedTrack")
@@ -952,128 +978,47 @@ class PlaylistManager(val service: PlaybackService) : MediaWrapperList.EventList
     }
 
     private fun applyDefaultSubtitleTrackIfNeeded(media: MediaWrapper) {
-        if (defaultSubtitleTrackApplied || resolveSavedSubtitleTrack(media) != null) return
+        if (resolveSavedSubtitleTrack(media) != null) return
+        if (defaultSubtitleTrackApplied) {
+            val previousDefaultTrack = automaticallySelectedSubtitleTrack ?: return
+            if (player.getSpuTrack() != previousDefaultTrack) return
+        }
 
-        val defaultTrack = resolveDefaultSubtitleTrack()
+        val defaultTrack = resolveDefaultSubtitleTrack(media)
         if (defaultTrack == "0") return
 
         if (player.setSpuTrack(defaultTrack)) {
             defaultSubtitleTrackApplied = true
+            automaticallySelectedSubtitleTrack = defaultTrack
             Log.e(TAG, "Default subtitle track selected by VLC path: $defaultTrack")
         }
     }
 
-    private fun resolveDefaultSubtitleTrack(): String {
-        val subtitleTracks = player.getSpuTracks()
-            ?.filter { it.getId() != "-1" }
+    private fun resolveDefaultSubtitleTrack(media: MediaWrapper): String {
+        val currentMediaSlaves = getCurrentMedia()?.slaves
+            ?.filter { it.type == IMedia.Slave.Type.Subtitle }
             ?: emptyList()
-        if (subtitleTracks.isEmpty()) return "0"
-
-        val preferredLanguageCodes = getDefaultSubtitleLanguageCodes()
-        val preferredTrack = findSubtitleTrackForLanguage(subtitleTracks, preferredLanguageCodes)
-        val fallbackTrack = findFirstAvailableSubtitleTrack(subtitleTracks)
-        if (preferredTrack == null && fallbackTrack != null)
-            Log.e(TAG, "Default subtitle fallback to first available track: $fallbackTrack")
-        return preferredTrack ?: fallbackTrack ?: "0"
-    }
-
-    private fun findSubtitleTrackForLanguage(subtitleTracks: List<VlcTrack>, preferredLanguageCodes: Set<String>): String? {
-        val allTracks: List<IMedia.Track> = runCatching {
-            player.mediaplayer.media?.getAllTracks()?.toList() ?: emptyList()
-        }.getOrElse {
-            Log.e(TAG, "Default subtitle metadata lookup failed; falling back to track names.", it)
-            emptyList()
+        val subtitleSlaves = currentMediaSlaves.ifEmpty {
+            media.slaves?.filter { it.type == IMedia.Slave.Type.Subtitle } ?: emptyList()
         }
-
-        for (track in subtitleTracks) {
-            val realTrack = allTracks.find { it.id.toString() == track.getId() }
-            if (subtitleTrackNameMatchesLanguage(realTrack?.language ?: "", preferredLanguageCodes)) {
-                Log.e(TAG, "Default subtitle matched metadata language: id=${track.getId()}, language=${realTrack?.language}")
-                return track.getId()
+        var subtitleSlaveIndex = 0
+        val orderedTracks = player.getSpuTracks()?.map { track ->
+            val trackId = track.getId()
+            val displayName = if (trackId != "-1") {
+                val slaveName = subtitleSlaves.getOrNull(subtitleSlaveIndex)?.uri
+                subtitleSlaveIndex += 1
+                slaveName ?: track.getName()
+            } else {
+                track.getName()
             }
-        }
-
-        for (track in subtitleTracks) {
-            if (subtitleTrackNameMatchesLanguage(track.getName(), preferredLanguageCodes)) {
-                Log.e(TAG, "Default subtitle matched track name: id=${track.getId()}, name=${track.getName()}")
-                return track.getId()
-            }
-        }
-
-        return null
-    }
-
-    private fun findFirstAvailableSubtitleTrack(subtitleTracks: List<VlcTrack>): String? {
-        return subtitleTracks.firstOrNull { it.getId() != "-1" }?.getId()
-    }
-
-    private fun getDefaultSubtitleLanguageCodes(): Set<String> {
-        val configuredLanguage = settings.getString(KEY_SUBTITLE_PREFERRED_LANGUAGE, "")?.trim()
-        val language = if (!configuredLanguage.isNullOrEmpty()) {
-            configuredLanguage
-        } else {
-            Locale.getDefault().toLanguageTag()
-        }
-
-        val aliases = LinkedHashSet<String>()
-        addLanguageAliases(language, aliases)
-        return aliases
-    }
-
-    private fun subtitleTrackNameMatchesLanguage(trackName: String, preferredLanguageCodes: Set<String>): Boolean {
-        val normalizedName = normalizeSubtitleTrackName(trackName)
-        if (normalizedName.isEmpty()) return false
-
-        return normalizedName
-            .split(Regex("[^a-z0-9]+"))
-            .filter { it.isNotEmpty() }
-            .any { normalizeLanguageCode(it) in preferredLanguageCodes }
-    }
-
-    private fun normalizeSubtitleTrackName(trackName: String): String {
-        val withoutQuery = trackName.substringBefore('?')
-        val decoded = runCatching { Uri.decode(withoutQuery) }.getOrDefault(withoutQuery)
-        return decoded
-            .substringAfterLast('/')
-            .substringAfterLast('\\')
-            .lowercase(Locale.ROOT)
-    }
-
-    private fun addLanguageAliases(language: String, aliases: MutableSet<String>) {
-        val normalized = normalizeLanguageCode(language)
-        if (normalized.isEmpty()) return
-
-        aliases.add(normalized)
-        aliases.add(normalized.substringBefore('-'))
-
-        val primary = normalized.substringBefore('-')
-        when (primary) {
-            "zh", "zho", "chi", "cn", "sc", "chs", "tc", "cht" -> {
-                aliases.addAll(listOf("zh", "zho", "chi", "chinese"))
-                if (normalized.contains("tw") || normalized.contains("hk") || normalized.contains("mo")
-                        || normalized.contains("hant") || primary == "tc" || primary == "cht") {
-                    aliases.addAll(listOf("tc", "cht", "traditional", "zh-tw", "zh-hant"))
-                } else if (normalized.contains("cn") || normalized.contains("sg")
-                        || normalized.contains("hans") || primary == "sc" || primary == "chs") {
-                    aliases.addAll(listOf("sc", "chs", "simplified", "zh-cn", "zh-hans"))
-                } else {
-                    aliases.addAll(listOf("sc", "chs", "tc", "cht", "simplified", "traditional"))
-                }
-            }
-            "en" -> aliases.addAll(listOf("eng", "english"))
-            "ja" -> aliases.addAll(listOf("jpn", "jp", "japanese"))
-            "ko" -> aliases.addAll(listOf("kor", "kr", "korean"))
-            "fr" -> aliases.addAll(listOf("fre", "fra", "french"))
-            "de" -> aliases.addAll(listOf("ger", "deu", "german"))
-            "es" -> aliases.addAll(listOf("spa", "spanish"))
-            "id", "in" -> aliases.addAll(listOf("id", "in", "ind", "indonesian"))
-        }
-    }
-
-    private fun normalizeLanguageCode(value: String): String {
-        return value.trim()
-            .lowercase(Locale.ROOT)
-            .replace('_', '-')
+            SubtitleTrackOrderEntry(trackId, displayName)
+        } ?: emptyList()
+        val defaultTrack = SubtitleTrackOrdering.firstSelectableTrackId(
+            orderedTracks
+        )
+        if (defaultTrack != null)
+            Log.e(TAG, "Default subtitle selected from alphabetical AAR order: $defaultTrack")
+        return defaultTrack ?: "0"
     }
 
     /**

@@ -39,6 +39,7 @@ import org.videolan.tools.putSingle
 import org.videolan.vlc.PlaybackService
 import org.videolan.vlc.gui.browser.FilePickerActivity
 import org.videolan.vlc.gui.browser.KEY_MEDIA
+import org.videolan.vlc.media.SubtitleTrackOrdering
 import org.videolan.vlc.repository.SlaveRepository
 import org.videolan.vlc.util.FileUtils
 import org.videolan.vlc.util.isSchemeFile
@@ -110,6 +111,12 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
         val forceUnmarkedAac4Ambisonics: Boolean,
         var flatVideo: Boolean = false,
         var parseResult: String? = null
+    )
+
+    private data class SubtitleTrackSnapshotEntry(
+        val id: String,
+        val sortName: String,
+        val json: org.json.JSONObject
     )
 
     private var playbackService: PlaybackService? = null
@@ -2501,7 +2508,7 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
         val selectedSpuTrack = service.spuTrack
         val subtitleSlaves = withTimeoutOrNull(500L) { resolveSubtitleSlaves(service) } ?: emptyList()
         var subtitleSlaveIndex = 0
-        val subtitleTracksArray = org.json.JSONArray()
+        val subtitleTrackEntries = ArrayList<SubtitleTrackSnapshotEntry>(spuTracks.size)
         spuTracks.forEach {
             val trackId = it.getId()
             val slave = if (trackId != "-1") {
@@ -2524,9 +2531,26 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
                         .put("uri", slave.uri)
                 )
             }
-            subtitleTracksArray.put(trackJson)
+            subtitleTrackEntries.add(
+                SubtitleTrackSnapshotEntry(
+                    trackId,
+                    slave?.uri ?: it.getName(),
+                    trackJson
+                )
+            )
         }
 
+        subtitleTrackEntries.sortWith { left, right ->
+            SubtitleTrackOrdering.compareForDisplay(
+                left.sortName,
+                left.id,
+                right.sortName,
+                right.id
+            )
+        }
+
+        val subtitleTracksArray = org.json.JSONArray()
+        subtitleTrackEntries.forEach { subtitleTracksArray.put(it.json) }
         return subtitleTracksArray
     }
 
