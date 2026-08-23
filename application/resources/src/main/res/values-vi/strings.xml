@@ -761,19 +761,19 @@ Bạn có thể phải nhấn vào \"Hiển thị thẻ nhớ SD\" trước tron
     <string name="video_remote_enable">Chuyển sang chế độ điều khiển từ xa</string>
     <string name="video_remote_disable">Nhân đôi màn hình</string>
     <string name="removed_from_playlist_anonymous">Đã xoá (các) mục khỏi danh sách phát</string>
-    <string name="welcome_title">Chào mừng đến với VLC!</string>
+    <string name="welcome_title">Chào mừng đến với XRLVLC!</string>
     <string name="welcome_subtitle">Trình phát đa phương tiện tự do và mã nguồn mở</string>
-    <string name="permission_media">VLC cần bạn cấp quyền để truy cập tập tin đa phương tiện trên thiết bị</string>
-    <string name="medialibrary_scan_explanation">VLC có thể tự động quét thiết bị của bạn để sắp xếp bộ sưu tập phương tiện của bạn.</string>
+    <string name="permission_media">XRLVLC cần bạn cấp quyền để truy cập tập tin đa phương tiện trên thiết bị</string>
+    <string name="medialibrary_scan_explanation">XRLVLC có thể tự động quét thiết bị của bạn để sắp xếp bộ sưu tập phương tiện của bạn.</string>
     <string name="onboarding_theme_title">Cứ tự nhiên như ở nhà</string>
     <string name="done">Hoàn tất</string>
     <string name="onboarding_scan_title">Tự động khám phá phương tiện của bạn</string>
-    <string name="onboarding_all_set">VLC đã thiết lập xong!</string>
+    <string name="onboarding_all_set">XRLVLC đã thiết lập xong!</string>
     <string name="onboarding_permission_given">Bây giờ bạn có thể tự động khám phá phương tiện của bạn, sử dụng phụ đề ngoài và phát các luồng truyền hoặc phương tiện trên mạng</string>
-    <string name="daynight_system_explanation">VLC sẽ tự động chuyển sang chế độ tối theo cài đặt hệ thống</string>
-    <string name="daynight_legacy_explanation">VLC sẽ tự động chuyển sang chế độ ban đêm tại thời gian phù hợp</string>
-    <string name="onboarding_scanning_enable">Để VLC quét thiết bị của tôi để tìm nội dung phương tiện</string>
-    <string name="onboarding_scan_customize">Để tôi chọn những thư mục VLC sẽ quét</string>
+    <string name="daynight_system_explanation">XRLVLC sẽ tự động chuyển sang chế độ tối theo cài đặt hệ thống</string>
+    <string name="daynight_legacy_explanation">XRLVLC sẽ tự động chuyển sang chế độ ban đêm tại thời gian phù hợp</string>
+    <string name="onboarding_scanning_enable">Để XRLVLC quét thiết bị của tôi để tìm nội dung phương tiện</string>
+    <string name="onboarding_scan_customize">Để tôi chọn những thư mục XRLVLC sẽ quét</string>
     <string name="button_medialibrary_preferences">Đi đến cài đặt thư viện phương tiện</string>
     <string name="light_theme">Chủ đề sáng</string>
     <string name="add">Thêm</string>
@@ -1020,7 +1020,7 @@ Bạn có thể phải nhấn vào \"Hiển thị thẻ nhớ SD\" trước tron
     <string name="lock_use_sensor_summary">Khi hướng xoay được khóa, sử dụng cảm biến để cho phép xoay ngược</string>
     <string name="start">Bắt đầu</string>
     <string name="notification_permission">Quyền thông báo</string>
-    <string name="notification_permission_explanation">VLC cần bạn cho phép gửi thông báo.\nỨng dụng sẽ chỉ thông báo cho bạn khi quét phương tiện của bạn hoặc sử dụng video tùy chỉnh Ảnh trong ảnh.\nViệc từ chối sẽ không ngăn VLC hoạt động, tuy nhiên, thông báo sẽ bị ẩn.</string>
+    <string name="notification_permission_explanation">XRLVLC cần bạn cho phép gửi thông báo.\nỨng dụng sẽ chỉ thông báo cho bạn khi quét phương tiện của bạn hoặc sử dụng video tùy chỉnh Ảnh trong ảnh.\nViệc từ chối sẽ không ngăn XRLVLC hoạt động, tuy nhiên, thông báo sẽ bị ẩn.</string>
     <string name="permission">Quyền</string>
     <string name="customize">Tùy chỉnh</string>
     <string name="selection_count">Đã chọn %d</string>
@@ -1178,7 +1178,7 @@ Bạn có thể phải nhấn vào \"Hiển thị thẻ nhớ SD\" trước tron
     <string name="ra_otp_subtitle">Nếu là bạn, hãy nhập mã này trên thiết bị kia</string>
     <string name="ra_otp_not_me">Không phải tôi</string>
 
-    <string name="ra_onboarding_welcome_desc">Chào mừng bạn đến với VLC dành cho quyền truy cập từ xa của Android\Bằng cách bật nó, bạn sẽ có thể kiểm soát quá trình phát lại của thiết bị này và hơn thế nữa</string>
+    <string name="ra_onboarding_welcome_desc">Chào mừng bạn đến với XRLVLC dành cho quyền truy cập từ xa của Android\Bằng cách bật nó, bạn sẽ có thể kiểm soát quá trình phát lại của thiết bị này và hơn thế nữa</string>
     <string name="ra_onboarding_how_title">Kiểm soát thiết bị của bạn</string>
     <string name="ra_onboarding_how_desc">Kiểm soát việc phát lại thiết bị của bạn, gửi hoặc truy xuất tệp và hơn thế nữa</string>
     <string name="ra_onboarding_ssl_title">Mã hóa dữ liệu</string>

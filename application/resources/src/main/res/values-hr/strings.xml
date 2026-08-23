@@ -522,10 +522,10 @@
     <string name="videos_groups_title">Grupe videozapisa</string>
     <string name="video_remote_disable">Udvostruči zaslon</string>
     <string name="removed_from_playlist_anonymous">Stavka(e) uklonjena/e/ s popisa izvođenja</string>
-    <string name="welcome_title">Dobrodošli u VLC!</string>
+    <string name="welcome_title">Dobrodošli u XRLVLC!</string>
     <string name="welcome_subtitle">Besplatan izvođač medija otvorenog koda</string>
-    <string name="permission_media">VLC treba dozvolu za pristup medijskim datotekama na ovom uređaju.</string>
-    <string name="medialibrary_scan_explanation">VLC može automatski pretražiti uređaj kako bi organizirao medijsku kolekciju.</string>
+    <string name="permission_media">XRLVLC treba dozvolu za pristup medijskim datotekama na ovom uređaju.</string>
+    <string name="medialibrary_scan_explanation">XRLVLC može automatski pretražiti uređaj kako bi organizirao medijsku kolekciju.</string>
     <string name="done">Završeno</string>
     <string name="light_theme">Svijetla tema</string>
     <string name="add">Dodaj</string>

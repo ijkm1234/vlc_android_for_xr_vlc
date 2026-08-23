@@ -896,21 +896,21 @@
     <string name="video_remote_enable">Prepnúť na režim ovládania na diaľku</string>
     <string name="video_remote_disable">Duplikovať obrazovku</string>
     <string name="removed_from_playlist_anonymous">Položka/položky odstránené z playlistu</string>
-    <string name="welcome_title">Vitajte vo VLC!</string>
+    <string name="welcome_title">Vitajte vo XRLVLC!</string>
     <string name="welcome_subtitle">Voľne šíriteľnom multimediálnom prehrávači s otvoreným zdrojovým kódom</string>
-    <string name="permission_media">VLC potrebuje Vaše povolenie na prístup k mediálnym súborom v zariadení</string>
+    <string name="permission_media">XRLVLC potrebuje Vaše povolenie na prístup k mediálnym súborom v zariadení</string>
     <string name="permission_video">VLC potrebuje oprávnenie na prístup k video súborom vo vašom zariadení</string>
     <string name="permission_audio">VLC potrebuje oprávnenie na prístup k zvukovým súborom vo vašom zariadení</string>
-    <string name="medialibrary_scan_explanation">VLC môže automaticky preskúmať vaše zariadenie a zorganizovať Vašu zbierku médií.</string>
+    <string name="medialibrary_scan_explanation">XRLVLC môže automaticky preskúmať vaše zariadenie a zorganizovať Vašu zbierku médií.</string>
     <string name="player_title_fd_warning">Bez oprávnenia na prístup do úložiska nedokáže VLC prevziať názov média a ani ukladať postup</string>
     <string name="onboarding_theme_title">Cíťte sa tu ako doma</string>
     <string name="done">Hotovo</string>
     <string name="onboarding_scan_title">Autom. vyhľadanie médií</string>
-    <string name="onboarding_all_set">VLC je nastavené!</string>
+    <string name="onboarding_all_set">XRLVLC je nastavené!</string>
     <string name="onboarding_permission_given">Teraz môžete automaticky objavovať médiá, používať externé titulky ako aj prehrávať streamy alebo sieťové médium</string>
-    <string name="daynight_system_explanation">VLC sa automaticky prepne do tmavého režimu, v súlade s nastaveniami systému</string>
-    <string name="daynight_legacy_explanation">VLC sa automaticky prepne do nočného režimu vo vhodnom čase</string>
-    <string name="onboarding_scanning_enable">Umožniť VLC vyhľadanie mediálneho obsahu v zariadení</string>
+    <string name="daynight_system_explanation">XRLVLC sa automaticky prepne do tmavého režimu, v súlade s nastaveniami systému</string>
+    <string name="daynight_legacy_explanation">XRLVLC sa automaticky prepne do nočného režimu vo vhodnom čase</string>
+    <string name="onboarding_scanning_enable">Umožniť XRLVLC vyhľadanie mediálneho obsahu v zariadení</string>
     <string name="onboarding_scan_customize">Umožniť výber prehľadávaných priečinkov</string>
     <string name="button_medialibrary_preferences">Prejsť na nastavenia knižnice s médiami</string>
     <string name="light_theme">Svetlá téma</string>
@@ -1185,7 +1185,7 @@
     <string name="lock_use_sensor_summary">Ak je uzamknutá orientácia, používať snímač na umožnenie opačnej orientácie</string>
     <string name="start">Štart</string>
     <string name="notification_permission">Oprávnenie pre notifikácie</string>
-    <string name="notification_permission_explanation">Aplikácia VLC potrebuje oprávnenie na zasielanie notifikácií.\nAplikácia vás upozorní iba pri skenovaní vašich médií alebo použití používateľského videa v režime obraz v obraze.\nOdmietnutie notifikácií nezabráni fungovaniu VLC, notifikácie však zostanú skryté.</string>
+    <string name="notification_permission_explanation">Aplikácia XRLVLC potrebuje oprávnenie na zasielanie notifikácií.\nAplikácia vás upozorní iba pri skenovaní vašich médií alebo použití používateľského videa v režime obraz v obraze.\nOdmietnutie notifikácií nezabráni fungovaniu XRLVLC, notifikácie však zostanú skryté.</string>
     <string name="permission">Oprávnenie</string>
     <string name="permission_no_access">Žiadny prístup k súboru</string>
     <string name="permissions">Oprávnenia</string>
@@ -1358,7 +1358,7 @@
     <string name="ra_otp_subtitle">Ak je vaše, zadajte na inom zariadení tento kód</string>
     <string name="ra_otp_not_me">Nie je moje</string>
 
-    <string name="ra_onboarding_welcome_desc">Vitajte v sekcii pre vzdialený prístup k VLC for Android\nPo zapnutí týchto volieb budete môcť ovládania prehrávania v zariadení a mnoho iného</string>
+    <string name="ra_onboarding_welcome_desc">Vitajte v sekcii pre vzdialený prístup k XRLVLC for Android\nPo zapnutí týchto volieb budete môcť ovládania prehrávania v zariadení a mnoho iného</string>
     <string name="ra_onboarding_how_title">Ovládanie vášho zariadenia</string>
     <string name="ra_onboarding_how_desc">Ovládanie prehrávania vo vašom zariadení, odosielanie alebo získavanie údajov a iné</string>
     <string name="ra_onboarding_ssl_title">Šifrovanie údajov</string>

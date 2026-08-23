@@ -549,11 +549,11 @@
     <string name="ctx_pip_title">पप-अप प्लेयर</string>
     <string name="device_dialog_title">बाह्य यन्त्र घुसाइयो</string>
     <string name="device_dialog_message">तपाईँले भर्खरै आफ्नो TV बक्समा नयाँ भण्डारण यन्त्र प्लग गर्नुभयो, के तपाईँ यसलाई VLC सँग खोल्न चाहनुहुन्छ?</string>
-    <string name="welcome_title">VLC मा स्वागत छ!</string>
-    <string name="permission_media">तपाईँको यन्त्रमा भएको मिडिया पहँच गर्न VLC लाई तपाईँको अनुमति आवश्यक छ</string>
-    <string name="medialibrary_scan_explanation">VLC ले तपाईँको मिडिया सङ्ग्रह व्यवस्थित गर्न स्वचालित रूपमा तपाईँको यन्त्र स्क्यान गर्न सक्छ</string>
+    <string name="welcome_title">XRLVLC मा स्वागत छ!</string>
+    <string name="permission_media">तपाईँको यन्त्रमा भएको मिडिया पहँच गर्न XRLVLC लाई तपाईँको अनुमति आवश्यक छ</string>
+    <string name="medialibrary_scan_explanation">XRLVLC ले तपाईँको मिडिया सङ्ग्रह व्यवस्थित गर्न स्वचालित रूपमा तपाईँको यन्त्र स्क्यान गर्न सक्छ</string>
     <string name="done">भयो</string>
-    <string name="onboarding_all_set">VLC पूर्ण रूपमा तयार छ!</string>
+    <string name="onboarding_all_set">XRLVLC पूर्ण रूपमा तयार छ!</string>
     <string name="add">थप्नुहोस्</string>
     <string name="add_to_new_playlist">नयाँ प्लेलिस्ट थप्नुहोस्</string>
     <string name="device_default">यन्त्र पूर्वनिर्धारित</string>

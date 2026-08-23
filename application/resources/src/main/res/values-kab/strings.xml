@@ -445,11 +445,11 @@
     <string name="videos_folders_title">Tividyutin s yikaramen</string>
     <string name="videos_groups_title">Igrawen n uvidyu</string>
     <string name="video_remote_disable">Sisleg agdil</string>
-    <string name="welcome_title">Anṣuf ɣer VLC!</string>
+    <string name="welcome_title">Anṣuf ɣer XRLVLC!</string>
     <string name="welcome_subtitle">Ameɣri agetmidya baṭel yerna s uɣbalu yeldin</string>
     <string name="done">Ifuk</string>
-    <string name="onboarding_scanning_enable">Eǧǧ VLC ad isleḍ imidyaten deg yibenk-inu</string>
-    <string name="onboarding_scan_customize">Eǧǧ-iyi ad ferneɣ anwi ikaramen ara yesleḍ VLC</string>
+    <string name="onboarding_scanning_enable">Eǧǧ XRLVLC ad isleḍ imidyaten deg yibenk-inu</string>
+    <string name="onboarding_scan_customize">Eǧǧ-iyi ad ferneɣ anwi ikaramen ara yesleḍ XRLVLC</string>
     <string name="button_medialibrary_preferences">Ddu s ismenyifen n temkarḍit n umidya</string>
     <string name="light_theme">Asentel anafaw</string>
     <string name="add">Rnu</string>

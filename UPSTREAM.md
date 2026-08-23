@@ -9,8 +9,10 @@ This repository is derived from VideoLAN VLC for Android.
 
 `buildsystem/compile.sh` clones the `v0.0.1` release tag from
 <https://github.com/ijkm1234/libvlcjni_for_xr_vlc.git> and verifies that it
-resolves to commit `2d96eac4d95e16c3da1dffa109848e7605ca1cf9`. The local
-`libvlcjni` checkout is not tracked by this repository.
+resolves to commit `b13e2bb1e92595e2c3de7c8d9ba39eab70226674`. In formal
+builds, an existing checkout must also be at that exact clean revision; `-b`
+explicitly permits local development sources. The local `libvlcjni` checkout
+is not tracked by this repository.
 
 This repository is not an official VideoLAN distribution and is not
 affiliated with or endorsed by VideoLAN.
