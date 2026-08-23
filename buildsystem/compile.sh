@@ -281,11 +281,12 @@ fi
 
 
 LIBVLCJNI_VERSION="v0.0.1"
-LIBVLCJNI_TESTED_HASH=2d96eac4d95e16c3da1dffa109848e7605ca1cf9
+LIBVLCJNI_TESTED_HASH=b13e2bb1e92595e2c3de7c8d9ba39eab70226674
 LIBVLCJNI_REPOSITORY=https://github.com/ijkm1234/libvlcjni_for_xr_vlc.git
 
 : ${VLC_LIBJNI_PATH:="$(pwd -P)/libvlcjni"}
 
+libvlcjni_initialized=0
 # Accept both a standalone checkout (.git directory) and an existing gitdir file.
 if [ ! -d "$VLC_LIBJNI_PATH" ] || [ ! -e "$VLC_LIBJNI_PATH/.git" ]; then
     diagnostic "libvlcjni sources: not found, cloning"
@@ -298,14 +299,39 @@ if [ ! -d "$VLC_LIBJNI_PATH" ] || [ ! -e "$VLC_LIBJNI_PATH/.git" ]; then
         git -C "${VLC_LIBJNI_PATH}" fetch "${LIBVLCJNI_REPOSITORY}" \
             "refs/tags/${LIBVLCJNI_VERSION}:refs/tags/${LIBVLCJNI_VERSION}"
     fi
-    git -C "${VLC_LIBJNI_PATH}" cat-file -e "${LIBVLCJNI_VERSION}^{commit}" || \
-        fail "libvlcjni sources: release tag ${LIBVLCJNI_VERSION} not found"
+    libvlcjni_initialized=1
+fi
+
+if [ "$libvlcjni_initialized" = 1 ] || [ "${BYPASS_VLC_SRC_CHECKS:-0}" != 1 ]; then
     libvlcjni_version_hash=$(git -C "${VLC_LIBJNI_PATH}" rev-parse \
-        "${LIBVLCJNI_VERSION}^{commit}")
+        "${LIBVLCJNI_VERSION}^{commit}" 2> /dev/null || true)
+    if [ "${libvlcjni_version_hash}" != "${LIBVLCJNI_TESTED_HASH}" ]; then
+        diagnostic "libvlcjni sources: fetching release tag ${LIBVLCJNI_VERSION}"
+        git -C "${VLC_LIBJNI_PATH}" fetch --force "${LIBVLCJNI_REPOSITORY}" \
+            "+refs/tags/${LIBVLCJNI_VERSION}:refs/tags/${LIBVLCJNI_VERSION}" || \
+            fail "libvlcjni sources: cannot fetch release tag ${LIBVLCJNI_VERSION}"
+        libvlcjni_version_hash=$(git -C "${VLC_LIBJNI_PATH}" rev-parse \
+            "${LIBVLCJNI_VERSION}^{commit}" 2> /dev/null || true)
+    fi
     [ "${libvlcjni_version_hash}" = "${LIBVLCJNI_TESTED_HASH}" ] || \
         fail "libvlcjni sources: ${LIBVLCJNI_VERSION} resolves to ${libvlcjni_version_hash}, expected ${LIBVLCJNI_TESTED_HASH}"
-    git -C "${VLC_LIBJNI_PATH}" reset --hard "${LIBVLCJNI_TESTED_HASH}" || \
-        fail "libvlcjni sources: LIBVLCJNI_TESTED_HASH ${LIBVLCJNI_TESTED_HASH} not found"
+
+    if [ "$libvlcjni_initialized" = 1 ]; then
+        git -C "${VLC_LIBJNI_PATH}" reset --hard "${LIBVLCJNI_TESTED_HASH}" || \
+            fail "libvlcjni sources: LIBVLCJNI_TESTED_HASH ${LIBVLCJNI_TESTED_HASH} not found"
+    else
+        libvlcjni_revision=$(git -C "${VLC_LIBJNI_PATH}" rev-parse HEAD)
+        [ "${libvlcjni_revision}" = "${LIBVLCJNI_TESTED_HASH}" ] || \
+            fail "libvlcjni sources: checkout is at ${libvlcjni_revision}, expected ${LIBVLCJNI_VERSION} (${LIBVLCJNI_TESTED_HASH}); check out the release tag or use -b for local sources"
+        git -C "${VLC_LIBJNI_PATH}" diff --quiet && \
+            git -C "${VLC_LIBJNI_PATH}" diff --cached --quiet || \
+            fail "libvlcjni sources: checkout contains tracked local changes; commit them or use -b for local sources"
+    fi
+else
+    diagnostic "libvlcjni sources: bypassing release checks for local sources"
+fi
+
+if [ "$libvlcjni_initialized" = 1 ]; then
     init_local_props "${VLC_LIBJNI_PATH}/local.properties" || \
         { echo "Error initializing local.properties"; exit $?; }
 fi
