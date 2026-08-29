@@ -1400,13 +1400,10 @@
     <string name="feedback_email_warning_remote_action">打开设置</string>
     <string name="feedback_email_warning_try_anyway">仍然尝试</string>
     <string name="xr_controller_shortcuts">XR 手柄快捷键</string>
-    <string name="xr_left_stick_click">左摇杆按下</string>
-    <string name="xr_right_stick_click">右摇杆按下</string>
     <string name="xr_button_y">Y 键</string>
     <string name="xr_button_b">B 键</string>
     <string name="xr_action_none">无操作</string>
     <string name="xr_action_toggle_2x_speed">切换 2 倍速</string>
     <string name="xr_action_toggle_subtitle">字幕显隐</string>
     <string name="xr_action_toggle_passthrough_background">透视背景</string>
-    <string name="xr_action_reset_screen_transform">重置画面位置</string>
 </resources>

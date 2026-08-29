@@ -1458,13 +1458,10 @@
     <string name="doc_url" translatable="false">https://docs.videolan.me/vlc-user/android/</string>
     <string name="xr_controller_shortcuts">XR controller shortcuts</string>
     <string name="xr_controller_jump_delay_summary">Seek duration uses Player controls > Jump delay.</string>
-    <string name="xr_left_stick_click">Left stick click</string>
-    <string name="xr_right_stick_click">Right stick click</string>
     <string name="xr_button_y">Y button</string>
     <string name="xr_button_b">B button</string>
     <string name="xr_action_none">None</string>
     <string name="xr_action_toggle_2x_speed">Toggle 2x speed</string>
     <string name="xr_action_toggle_subtitle">Toggle subtitles</string>
     <string name="xr_action_toggle_passthrough_background">Passthrough background</string>
-    <string name="xr_action_reset_screen_transform">Reset screen position</string>
 </resources>

@@ -734,7 +734,6 @@
         <item>@string/xr_action_toggle_2x_speed</item>
         <item>@string/xr_action_toggle_subtitle</item>
         <item>@string/xr_action_toggle_passthrough_background</item>
-        <item>@string/xr_action_reset_screen_transform</item>
     </string-array>
 
     <string-array name="xr_controller_action_values" translatable="false">
@@ -742,7 +741,6 @@
         <item>toggle_2x_speed</item>
         <item>toggle_subtitle</item>
         <item>toggle_passthrough_background</item>
-        <item>reset_screen_transform</item>
     </string-array>
 
 </resources>

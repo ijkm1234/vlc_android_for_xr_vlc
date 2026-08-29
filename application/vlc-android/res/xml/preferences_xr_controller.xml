@@ -11,26 +11,6 @@
             app:iconSpaceReserved="false">
 
         <ListPreference
-                android:key="xr_pref_left_stick_click"
-                android:entries="@array/xr_controller_action_entries"
-                android:entryValues="@array/xr_controller_action_values"
-                android:summary="%s"
-                android:title="@string/xr_left_stick_click"
-                app:iconSpaceReserved="false"
-                app:persistent="false"
-                app:singleLineTitle="false" />
-
-        <ListPreference
-                android:key="xr_pref_right_stick_click"
-                android:entries="@array/xr_controller_action_entries"
-                android:entryValues="@array/xr_controller_action_values"
-                android:summary="%s"
-                android:title="@string/xr_right_stick_click"
-                app:iconSpaceReserved="false"
-                app:persistent="false"
-                app:singleLineTitle="false" />
-
-        <ListPreference
                 android:key="xr_pref_button_y"
                 android:entries="@array/xr_controller_action_entries"
                 android:entryValues="@array/xr_controller_action_values"

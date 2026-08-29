@@ -7,7 +7,6 @@ import android.net.Uri
 import android.support.v4.media.session.PlaybackStateCompat
 import android.widget.Toast
 import androidx.annotation.MainThread
-import androidx.core.net.toUri
 import androidx.lifecycle.MutableLiveData
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
@@ -19,6 +18,7 @@ import org.videolan.libvlc.interfaces.IMedia
 import org.videolan.libvlc.interfaces.IMediaList
 import org.videolan.libvlc.interfaces.IVLCVout
 import org.videolan.medialibrary.interfaces.media.MediaWrapper
+import org.videolan.medialibrary.interfaces.media.MediaWrapperSlavesAccessor
 import org.videolan.resources.VLCInstance
 import org.videolan.resources.VLCOptions
 import org.videolan.tools.KEY_EQUALIZER_ENABLED
@@ -281,28 +281,41 @@ class PlayerController(val context: Context) : IVLCVout.Callback, MediaPlayer.Ev
         android.util.Log.e("XR_CONTROL", "PlayerController.release exit reason=$reason targetIsCurrent=${player === mediaplayer} ${describeTimelineState()}")
     }
 
-    fun setSlaves(media: IMedia, mw: MediaWrapper) = launch {
-        if (mediaplayer.isReleased) return@launch
-        val slaves = mw.slaves
-        android.util.Log.e("VLC-AAR-TRACE", "[PlayerController] setSlaves called. mw.slaves is null? ${slaves == null}")
-        slaves?.let { it.forEach { slave -> 
-            android.util.Log.e("VLC-AAR-TRACE", "[PlayerController] Adding slave from mw.slaves to media: ${slave.uri}")
-            media.addSlave(slave) 
-        } }
-        media.release()
+    suspend fun prepareSlaves(media: IMedia, mw: MediaWrapper) {
+        if (mediaplayer.isReleased) return
+        val wrapperSlaves = mw.slaves?.toList().orEmpty()
         val dbSlaves = slaveRepository.getSlaves(mw.location)
         android.util.Log.e("VLC-AAR-TRACE", "[PlayerController] Fetched slaves from DB for location ${mw.location}: count=${dbSlaves.size}")
+        val knownSlaves = wrapperSlaves
+            .mapTo(HashSet()) { slaveKey(it) }
+        val mergedSlaves = ArrayList(wrapperSlaves)
         dbSlaves.forEach { slave ->
-            if (slaves == null || !slaves.contains(slave)) {
-                android.util.Log.e("VLC-AAR-TRACE", "[PlayerController] Adding slave from DB to mediaplayer: ${slave.uri}")
-                mediaplayer.addSlave(slave.type, slave.uri.toUri(), false)
+            if (knownSlaves.add(slaveKey(slave))) {
+                mergedSlaves.add(slave)
             }
         }
-        slaves?.let { 
-            android.util.Log.e("VLC-AAR-TRACE", "[Source: MediaWrapper] Saving slaves to DB via PlayerController.")
-            slaveRepository.saveSlaves(mw) 
-        }
+
+        if (mergedSlaves.isNotEmpty()) {
+            val slaves = mergedSlaves.toTypedArray()
+            SubtitleTrackOrdering.sortExternalSubtitlesInPlace(slaves)
+            MediaWrapperSlavesAccessor.setSlaves(mw, slaves)
+            android.util.Log.e(
+                "VLC-AAR-TRACE",
+                "[PlayerController] Prepared slaves before playback: total=${slaves.size} " +
+                    "subtitles=${slaves.count { it.type == IMedia.Slave.Type.Subtitle }}"
+            )
+            slaves.forEach { slave ->
+                android.util.Log.e("VLC-AAR-TRACE", "[PlayerController] Adding prepared slave to media: ${slave.uri}")
+                media.addSlave(slave)
+            }
+            if (wrapperSlaves.isNotEmpty()) {
+                android.util.Log.e("VLC-AAR-TRACE", "[Source: MediaWrapper] Saving slaves to DB via PlayerController.")
+                slaveRepository.saveSlaves(mw)
+            }
+        } else MediaWrapperSlavesAccessor.setSlaves(mw, emptyArray())
     }
+
+    private fun slaveKey(slave: IMedia.Slave) = slave.type to Uri.decode(slave.uri)
 
     private fun newMediaPlayer() : MediaPlayer {
         return MediaPlayer(VLCInstance.getInstance(context)).apply {
