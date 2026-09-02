@@ -682,10 +682,6 @@ class PlaylistManager(val service: PlaybackService) : MediaWrapperList.EventList
                 media.addOption(":mp4-force-unmarked-aac4-ambisonics")
                 Log.w("Unity", "==== [XR_AUDIO] Enabled unmarked AAC4 Ambisonics fallback for panoramic media: ${mw.uri} ====")
             }
-            if (PlaybackServiceBridge.shouldMixAudioToMono()) {
-                media.addOption(":audio-filter=mono")
-                Log.w("Unity", "==== [XR_AUDIO] Enabled mono downmix audio filter for media: ${mw.uri} ====")
-            }
             VLCOptions.setMediaOptions(media, ctx, flags or mw.flags, PlaybackService.hasRenderer())
             /* keeping only video during benchmark */
             if (isBenchmark) {

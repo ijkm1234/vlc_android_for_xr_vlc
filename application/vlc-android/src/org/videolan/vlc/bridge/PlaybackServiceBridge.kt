@@ -67,8 +67,6 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
     private const val DEFAULT_SUBTITLE_OPACITY = 255
     private const val MIN_SUBTITLE_OPACITY = 50
     private const val SUBTITLE_STYLE_RESTART_DEBOUNCE_MS = 200L
-    private const val XR_AUDIO_CHANNEL_STEREO = "stereo"
-    private const val XR_AUDIO_CHANNEL_MONO = "mono"
     private const val COLOR_EXTRACTION_TIMEOUT_MS = 2_500L
     private const val VOUT_DETACH_TIMEOUT_MS = 1_500L
     private const val VOUT_ATTACH_TIMEOUT_MS = 5_000L
@@ -127,9 +125,6 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
     )
 
     private var playbackService: PlaybackService? = null
-    @Volatile
-    private var audioChannelMode = XR_AUDIO_CHANNEL_STEREO
-
     @Volatile
     private var lastUnityVolumePercent = 100
 
@@ -1461,6 +1456,21 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
     }
 
     @JvmStatic
+    fun setAudioDelay(delayUs: Long) {
+        android.util.Log.e(TAG, "setAudioDelay delayUs=$delayUs")
+        CoroutineScope(Dispatchers.Main).launch {
+            playbackService?.setAudioDelay(delayUs)
+        }
+    }
+
+    @JvmStatic
+    fun getAudioDelay(): Long {
+        val delayUs = playbackService?.audioDelay ?: 0L
+        android.util.Log.e(TAG, "getAudioDelay delayUs=$delayUs")
+        return delayUs
+    }
+
+    @JvmStatic
     fun openSubtitlePicker() {
         android.util.Log.e(TAG, "openSubtitlePicker")
         val intent = Intent(AppContextProvider.appContext, XrSubtitlePickerActivity::class.java)
@@ -2105,24 +2115,6 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
         CoroutineScope(Dispatchers.Main).launch {
             playbackService?.mediaplayer?.videoScale = scale
         }
-    }
-
-    @JvmStatic
-    fun setAudioChannelMode(mode: String) {
-        val normalizedMode = if (mode == XR_AUDIO_CHANNEL_MONO) XR_AUDIO_CHANNEL_MONO else XR_AUDIO_CHANNEL_STEREO
-        android.util.Log.e(TAG, "setAudioChannelMode called with mode: $normalizedMode")
-
-        audioChannelMode = normalizedMode
-        applyAudioChannelMode(normalizedMode)
-    }
-
-    private fun applyAudioChannelMode(mode: String) {
-        android.util.Log.e(TAG, "applyAudioChannelMode runtime mode=$mode applies on next media start")
-    }
-
-    @JvmStatic
-    fun shouldMixAudioToMono(): Boolean {
-        return audioChannelMode == XR_AUDIO_CHANNEL_MONO
     }
 
     @JvmStatic
