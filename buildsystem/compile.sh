@@ -281,7 +281,7 @@ fi
 
 
 LIBVLCJNI_VERSION="v0.0.1"
-LIBVLCJNI_TESTED_HASH=b13e2bb1e92595e2c3de7c8d9ba39eab70226674
+LIBVLCJNI_TESTED_HASH=1e0f2fa5114700381e61e90d796f7edf86a733da
 LIBVLCJNI_REPOSITORY=https://github.com/ijkm1234/libvlcjni_for_xr_vlc.git
 
 : ${VLC_LIBJNI_PATH:="$(pwd -P)/libvlcjni"}
