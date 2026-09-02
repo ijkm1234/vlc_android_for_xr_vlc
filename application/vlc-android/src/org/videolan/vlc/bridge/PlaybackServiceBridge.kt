@@ -20,8 +20,11 @@ import android.view.Surface
 import androidx.core.net.toUri
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import org.videolan.libvlc.MediaPlayer
 import org.videolan.libvlc.interfaces.IMedia
@@ -32,14 +35,16 @@ import org.videolan.medialibrary.interfaces.media.MediaWrapper
 import org.videolan.medialibrary.media.MediaWrapperImpl
 import org.videolan.resources.AndroidDevices
 import org.videolan.resources.AppContextProvider
+import org.videolan.resources.VLCInstance
 import org.videolan.tools.KEY_AUDIO_BOOST
+import org.videolan.tools.KEY_SUBTITLES_COLOR_OPACITY
+import org.videolan.tools.KEY_SUBTITLES_SIZE
 import org.videolan.tools.Settings
 import org.videolan.tools.VIDEO_RATIO
 import org.videolan.tools.putSingle
 import org.videolan.vlc.PlaybackService
 import org.videolan.vlc.gui.browser.FilePickerActivity
 import org.videolan.vlc.gui.browser.KEY_MEDIA
-import org.videolan.vlc.media.SubtitleTrackOrdering
 import org.videolan.vlc.repository.SlaveRepository
 import org.videolan.vlc.util.FileUtils
 import org.videolan.vlc.util.isSchemeFile
@@ -49,6 +54,7 @@ import java.util.ArrayDeque
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.math.roundToInt
 
 object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLCVout.OnNewVideoLayoutListener {
@@ -57,8 +63,10 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
     private const val SUBTITLE_RENDER_NATIVE = 0
     private const val SUBTITLE_RENDER_SPATIAL = 1
     private const val SUBTITLE_RENDER_OFF = 2
-    private const val XR_AUDIO_CHANNEL_STEREO = "stereo"
-    private const val XR_AUDIO_CHANNEL_MONO = "mono"
+    private const val DEFAULT_SUBTITLE_FONT_SIZE = "16"
+    private const val DEFAULT_SUBTITLE_OPACITY = 255
+    private const val MIN_SUBTITLE_OPACITY = 50
+    private const val SUBTITLE_STYLE_RESTART_DEBOUNCE_MS = 200L
     private const val COLOR_EXTRACTION_TIMEOUT_MS = 2_500L
     private const val VOUT_DETACH_TIMEOUT_MS = 1_500L
     private const val VOUT_ATTACH_TIMEOUT_MS = 5_000L
@@ -73,6 +81,9 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
     private const val VLC_TASK_HIDDEN = 0
     private const val VLC_TASK_VISIBLE = 1
     private const val VLC_RESTORE_COOLDOWN_MS = 500L
+    private val supportedSubtitleFontSizes = setOf("40", "32", "25", "19", "16", "13", "10")
+    private val subtitleStyleRestartRevision = AtomicLong(0L)
+    private val subtitleStyleRestartMutex = Mutex()
     private data class VideoLayoutSize(
         val width: Int,
         val height: Int,
@@ -113,16 +124,7 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
         var parseResult: String? = null
     )
 
-    private data class SubtitleTrackSnapshotEntry(
-        val id: String,
-        val sortName: String,
-        val json: org.json.JSONObject
-    )
-
     private var playbackService: PlaybackService? = null
-    @Volatile
-    private var audioChannelMode = XR_AUDIO_CHANNEL_STEREO
-
     @Volatile
     private var lastUnityVolumePercent = 100
 
@@ -220,8 +222,7 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
         this.playbackService = service
         service.addCallback(this)
         service.mediaplayer.vlcVout.addCallback(this)
-        service.mediaplayer.setXrSubtitleStackOutside(subtitleStackOutside)
-        service.mediaplayer.setXrSubtitleSurfaceEnabled(shouldEnableXrSubtitleSurface())
+        applyXrSubtitlePlayerConfiguration(service.mediaplayer, "bind-service")
         android.util.Log.e(TAG, "PlaybackService bound to Bridge")
         surfaceDebug(
             "bind_service service=${System.identityHashCode(service)} " +
@@ -1418,6 +1419,18 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
         return subtitleRenderMode == SUBTITLE_RENDER_SPATIAL && subtitleSurface?.isValid == true
     }
 
+    private fun applyXrSubtitlePlayerConfiguration(player: MediaPlayer, reason: String) {
+        val surfaceEnabled = shouldEnableXrSubtitleSurface()
+        val stackApplied = player.setXrSubtitleStackOutside(subtitleStackOutside)
+        val surfaceApplied = player.setXrSubtitleSurfaceEnabled(surfaceEnabled)
+        Log.e(
+            TAG,
+            "XR_SUB_PLAYER_CONFIG reason=$reason player=${System.identityHashCode(player)} " +
+                "stackOutside=$subtitleStackOutside stackApplied=$stackApplied " +
+                "surfaceEnabled=$surfaceEnabled surfaceApplied=$surfaceApplied"
+        )
+    }
+
     private fun applyXrSubtitleSurfaceEnabled(enabled: Boolean, reason: String) {
         Log.e(
             TAG,
@@ -1439,6 +1452,21 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
     fun getSubtitleDelay(): Long {
         val delayUs = playbackService?.spuDelay ?: 0L
         android.util.Log.e(TAG, "getSubtitleDelay delayUs=$delayUs")
+        return delayUs
+    }
+
+    @JvmStatic
+    fun setAudioDelay(delayUs: Long) {
+        android.util.Log.e(TAG, "setAudioDelay delayUs=$delayUs")
+        CoroutineScope(Dispatchers.Main).launch {
+            playbackService?.setAudioDelay(delayUs)
+        }
+    }
+
+    @JvmStatic
+    fun getAudioDelay(): Long {
+        val delayUs = playbackService?.audioDelay ?: 0L
+        android.util.Log.e(TAG, "getAudioDelay delayUs=$delayUs")
         return delayUs
     }
 
@@ -1543,7 +1571,10 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
     }
 
     private fun configureVoutSurfaces(reason: String) {
-        val vout = playbackService?.mediaplayer?.vlcVout
+        val player = playbackService?.mediaplayer
+        if (player != null)
+            applyXrSubtitlePlayerConfiguration(player, "configure-vout-$reason")
+        val vout = player?.vlcVout
         if (vout != null) {
             val currentVideoSurface = videoSurface
             val currentSubtitleSurface = subtitleSurface
@@ -2018,6 +2049,62 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
     }
 
     @JvmStatic
+    fun getSubtitleFontSize(): String {
+        val value = Settings.getInstance(AppContextProvider.appContext)
+            .getString(KEY_SUBTITLES_SIZE, DEFAULT_SUBTITLE_FONT_SIZE)
+        return value?.takeIf(supportedSubtitleFontSizes::contains) ?: DEFAULT_SUBTITLE_FONT_SIZE
+    }
+
+    @JvmStatic
+    fun setSubtitleFontSize(value: String) {
+        val normalizedValue = value.takeIf(supportedSubtitleFontSizes::contains)
+            ?: DEFAULT_SUBTITLE_FONT_SIZE
+        val settings = Settings.getInstance(AppContextProvider.appContext)
+        if (settings.getString(KEY_SUBTITLES_SIZE, DEFAULT_SUBTITLE_FONT_SIZE) == normalizedValue) return
+
+        settings.putSingle(KEY_SUBTITLES_SIZE, normalizedValue)
+        scheduleSubtitleStyleRestart("font-size=$normalizedValue")
+    }
+
+    @JvmStatic
+    fun getSubtitleOpacity(): Int {
+        return Settings.getInstance(AppContextProvider.appContext)
+            .getInt(KEY_SUBTITLES_COLOR_OPACITY, DEFAULT_SUBTITLE_OPACITY)
+            .coerceIn(MIN_SUBTITLE_OPACITY, DEFAULT_SUBTITLE_OPACITY)
+    }
+
+    @JvmStatic
+    fun setSubtitleOpacity(value: Int) {
+        val normalizedValue = value.coerceIn(MIN_SUBTITLE_OPACITY, DEFAULT_SUBTITLE_OPACITY)
+        val settings = Settings.getInstance(AppContextProvider.appContext)
+        if (settings.getInt(KEY_SUBTITLES_COLOR_OPACITY, DEFAULT_SUBTITLE_OPACITY) == normalizedValue) return
+
+        settings.putSingle(KEY_SUBTITLES_COLOR_OPACITY, normalizedValue)
+        scheduleSubtitleStyleRestart("opacity=$normalizedValue")
+    }
+
+    private fun scheduleSubtitleStyleRestart(reason: String) {
+        val revision = subtitleStyleRestartRevision.incrementAndGet()
+        android.util.Log.e(TAG, "scheduleSubtitleStyleRestart revision=$revision reason=$reason")
+        CoroutineScope(Dispatchers.Main).launch {
+            delay(SUBTITLE_STYLE_RESTART_DEBOUNCE_MS)
+            subtitleStyleRestartMutex.withLock {
+                if (revision != subtitleStyleRestartRevision.get()) return@withLock
+
+                val service = playbackService
+                if (service == null) {
+                    android.util.Log.e(TAG, "applySubtitleStyleRestart deferred until playback service starts revision=$revision reason=$reason")
+                    return@withLock
+                }
+
+                android.util.Log.e(TAG, "applySubtitleStyleRestart revision=$revision reason=$reason")
+                VLCInstance.restart()
+                service.playlistManager.restart()
+            }
+        }
+    }
+
+    @JvmStatic
     fun setVideoScale(scaleOrdinal: Int) {
         val scales = MediaPlayer.ScaleType.entries
         val safeOrdinal = scaleOrdinal.coerceIn(0, scales.size - 1)
@@ -2028,24 +2115,6 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
         CoroutineScope(Dispatchers.Main).launch {
             playbackService?.mediaplayer?.videoScale = scale
         }
-    }
-
-    @JvmStatic
-    fun setAudioChannelMode(mode: String) {
-        val normalizedMode = if (mode == XR_AUDIO_CHANNEL_MONO) XR_AUDIO_CHANNEL_MONO else XR_AUDIO_CHANNEL_STEREO
-        android.util.Log.e(TAG, "setAudioChannelMode called with mode: $normalizedMode")
-
-        audioChannelMode = normalizedMode
-        applyAudioChannelMode(normalizedMode)
-    }
-
-    private fun applyAudioChannelMode(mode: String) {
-        android.util.Log.e(TAG, "applyAudioChannelMode runtime mode=$mode applies on next media start")
-    }
-
-    @JvmStatic
-    fun shouldMixAudioToMono(): Boolean {
-        return audioChannelMode == XR_AUDIO_CHANNEL_MONO
     }
 
     @JvmStatic
@@ -2508,7 +2577,7 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
         val selectedSpuTrack = service.spuTrack
         val subtitleSlaves = withTimeoutOrNull(500L) { resolveSubtitleSlaves(service) } ?: emptyList()
         var subtitleSlaveIndex = 0
-        val subtitleTrackEntries = ArrayList<SubtitleTrackSnapshotEntry>(spuTracks.size)
+        val subtitleTracksArray = org.json.JSONArray()
         spuTracks.forEach {
             val trackId = it.getId()
             val slave = if (trackId != "-1") {
@@ -2531,26 +2600,9 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
                         .put("uri", slave.uri)
                 )
             }
-            subtitleTrackEntries.add(
-                SubtitleTrackSnapshotEntry(
-                    trackId,
-                    slave?.uri ?: it.getName(),
-                    trackJson
-                )
-            )
+            subtitleTracksArray.put(trackJson)
         }
 
-        subtitleTrackEntries.sortWith { left, right ->
-            SubtitleTrackOrdering.compareForDisplay(
-                left.sortName,
-                left.id,
-                right.sortName,
-                right.id
-            )
-        }
-
-        val subtitleTracksArray = org.json.JSONArray()
-        subtitleTrackEntries.forEach { subtitleTracksArray.put(it.json) }
         return subtitleTracksArray
     }
 

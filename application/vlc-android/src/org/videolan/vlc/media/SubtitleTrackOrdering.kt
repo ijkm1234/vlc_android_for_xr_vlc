@@ -6,38 +6,25 @@
 package org.videolan.vlc.media
 
 import android.net.Uri
+import org.videolan.libvlc.interfaces.IMedia
 
-internal data class SubtitleTrackOrderEntry(
-    val id: String,
-    val displayName: String
-)
-
-/** AAR 侧统一字幕轨道顺序，Unity 只消费这里生成的顺序。 */
+/** Sort external subtitle slaves before they are added to VLC. */
 internal object SubtitleTrackOrdering {
-    private const val DISABLED_TRACK_ID = "-1"
+    fun sortExternalSubtitlesInPlace(slaves: Array<IMedia.Slave>) {
+        val sortedSubtitles = slaves
+            .filter { it.type == IMedia.Slave.Type.Subtitle }
+            .sortedWith { left, right -> compareNames(left.uri, right.uri) }
+            .iterator()
 
-    fun compareForDisplay(
-        leftName: String,
-        leftId: String,
-        rightName: String,
-        rightId: String
-    ): Int {
-        val leftDisabled = leftId == DISABLED_TRACK_ID
-        val rightDisabled = rightId == DISABLED_TRACK_ID
-        if (leftDisabled != rightDisabled) return if (leftDisabled) -1 else 1
-
-        val nameComparison = normalizeName(leftName).compareTo(normalizeName(rightName), ignoreCase = true)
-        return if (nameComparison != 0) nameComparison else leftId.compareTo(rightId)
+        slaves.indices.forEach { index ->
+            if (slaves[index].type == IMedia.Slave.Type.Subtitle)
+                slaves[index] = sortedSubtitles.next()
+        }
     }
 
-    fun firstSelectableTrackId(tracks: Iterable<SubtitleTrackOrderEntry>): String? {
-        return tracks
-            .filter { it.id != DISABLED_TRACK_ID }
-            .sortedWith { left, right ->
-                compareForDisplay(left.displayName, left.id, right.displayName, right.id)
-            }
-            .firstOrNull()
-            ?.id
+    private fun compareNames(left: String, right: String): Int {
+        val nameComparison = normalizeName(left).compareTo(normalizeName(right), ignoreCase = true)
+        return if (nameComparison != 0) nameComparison else left.compareTo(right)
     }
 
     private fun normalizeName(value: String): String {

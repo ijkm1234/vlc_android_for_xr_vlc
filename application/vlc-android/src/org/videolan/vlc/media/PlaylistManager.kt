@@ -14,13 +14,11 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.actor
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -114,7 +112,6 @@ private const val TAG = "VLC/PlaylistManager"
 private const val PREVIOUS_LIMIT_DELAY = 5000L
 private const val PLAYLIST_AUDIO_REPEAT_MODE_KEY = "audio_repeat_mode"
 private const val PLAYLIST_VIDEO_REPEAT_MODE_KEY = "video_repeat_mode"
-private const val DEFAULT_SUBTITLE_TRACK_SETTLE_DELAY_MS = 750L
 
 class PlaylistManager(val service: PlaybackService) : MediaWrapperList.EventListener, IMedia.EventListener, CoroutineScope {
     private var endReachedFor: String? = null
@@ -145,8 +142,6 @@ class PlaylistManager(val service: PlaybackService) : MediaWrapperList.EventList
             currentPlayedMedia.postValue(mediaList.getMedia(value))
         }
     private var defaultSubtitleTrackApplied = false
-    private var defaultSubtitleTrackSelectionJob: Job? = null
-    private var automaticallySelectedSubtitleTrack: String? = null
     private var nextIndex = -1
     private var prevIndex = -1
     private var previous = Stack<Int>()
@@ -166,6 +161,12 @@ class PlaylistManager(val service: PlaybackService) : MediaWrapperList.EventList
     private var preBrowserVolume = -1
     private var parsed = false
     var savedTime = 0L
+    private data class PendingRestartPlayback(
+        val mediaUri: String,
+        val resumeTimeMs: Long,
+        val resumePaused: Boolean
+    )
+    private var pendingRestartPlayback: PendingRestartPlayback? = null
     private var random = SecureRandom()
     private var newMedia = false
     @Volatile
@@ -419,13 +420,48 @@ class PlaylistManager(val service: PlaybackService) : MediaWrapperList.EventList
     }
 
     fun restart() {
-        val isPlaying = player.isPlaying() && isAudioList()
-        stop()
-        if (isPlaying) PlaybackService.loadLastAudio(service)
+        val restartIndex = currentIndex
+        val media = getCurrentMedia()
+        if (media == null || !isValidPosition(restartIndex)) {
+            Log.e(
+                "XR_CONTROL",
+                "PlaylistManager.restart no current media; restarting player only ${describeControlState()}"
+            )
+            pendingRestartPlayback = null
+            player.restart()
+            playingState.value = false
+            return
+        }
+
+        val mediaUri = media.uri.toString()
+        val existingRestart = pendingRestartPlayback
+            ?.takeIf { it.mediaUri == mediaUri }
+        val resumeTimeMs = existingRestart?.resumeTimeMs
+            ?: player.getCurrentTime().coerceAtLeast(0L)
+        val resumePaused = existingRestart?.resumePaused ?: player.isPaused()
+
+        if (resumePaused) media.addFlags(MediaWrapper.MEDIA_PAUSED)
+        else media.removeFlags(MediaWrapper.MEDIA_PAUSED)
+
+        pendingRestartPlayback = PendingRestartPlayback(mediaUri, resumeTimeMs, resumePaused)
+        Log.e(
+            "XR_CONTROL",
+            "PlaylistManager.restart full playback restart index=$restartIndex uri=$mediaUri " +
+                "resumeTimeMs=$resumeTimeMs resumePaused=$resumePaused ${describeControlState()}"
+        )
+
+        // Keep the playlist intact. Video restarts must return through playIndex so Unity can
+        // rebuild/rebind its external video and subtitle Surfaces before Android starts media.
+        player.restart()
+        playingState.value = false
+        launch {
+            playIndex(restartIndex, forceResume = true)
+        }
     }
 
     fun stop(systemExit: Boolean = false, video: Boolean = false) {
         Log.e("XR_CONTROL", "PlaylistManager.stop enter systemExit=$systemExit video=$video ${describeControlState()}")
+        pendingRestartPlayback = null
         clearABRepeat()
         if (stopAfter != -1) Settings.getInstance(AppContextProvider.appContext).putSingle(AUDIO_STOP_AFTER, stopAfter)
         stopAfter = -1
@@ -557,10 +593,7 @@ class PlaylistManager(val service: PlaybackService) : MediaWrapperList.EventList
         if (videoBackground) mw.addFlags(MediaWrapper.MEDIA_FORCE_AUDIO)
         if (isBenchmark) mw.addFlags(MediaWrapper.MEDIA_BENCHMARK)
         parsed = false
-        defaultSubtitleTrackSelectionJob?.cancel()
-        defaultSubtitleTrackSelectionJob = null
         defaultSubtitleTrackApplied = false
-        automaticallySelectedSubtitleTrack = null
         player.switchToVideo = false
         if (mw.uri.scheme == "content") withContext(Dispatchers.IO) { MediaUtils.retrieveMediaTitle(mw) }
 
@@ -605,20 +638,23 @@ class PlaylistManager(val service: PlaybackService) : MediaWrapperList.EventList
             val title = mw.getMetaLong(MediaWrapper.META_TITLE)
             if (title > 0) uri = "$uri#$title".toUri()
 
+            val restartResume = isPendingRestartResume(mw)
             val start: Long
             if (isVideoPlaying) {
-                start = if (forceRestart
-                    || videoResumeStatus == ResumeStatus.NEVER) 0L else getStartTime(mw)
+                start = if (restartResume) getStartTime(mw)
+                else if (forceRestart || videoResumeStatus == ResumeStatus.NEVER) 0L
+                else getStartTime(mw)
                 Log.e(TAG, "==== [XR_FROM_START] playIndex resolved video start=$start uri=${mw.uri} forceRestart=$forceRestart videoResumeStatus=$videoResumeStatus hasFromStartAfterResolve=${mw.hasFlag(MediaWrapper.MEDIA_FROM_START)} time=${mw.time} savedTime=$savedTime ====")
-                if (!forceResume && videoResumeStatus == ResumeStatus.ASK && start > 0 && isAppStarted()) {
+                if (!forceResume && !restartResume && videoResumeStatus == ResumeStatus.ASK && start > 0 && isAppStarted()) {
                     waitForConfirmation.postValue(WaitConfirmation(mw.title, index, flags))
                     return
                 }
             } else {
-                start = if (forceRestart
-                    || audioResumeStatus == ResumeStatus.NEVER) 0L else getStartTime(mw)
+                start = if (restartResume) getStartTime(mw)
+                else if (forceRestart || audioResumeStatus == ResumeStatus.NEVER) 0L
+                else getStartTime(mw)
                 Log.e(TAG, "==== [XR_FROM_START] playIndex resolved audio/start=$start uri=${mw.uri} forceRestart=$forceRestart audioResumeStatus=$audioResumeStatus hasFromStartAfterResolve=${mw.hasFlag(MediaWrapper.MEDIA_FROM_START)} time=${mw.time} savedTime=$savedTime ====")
-                if (!forceResume && audioResumeStatus == ResumeStatus.ASK && start > 0 && isAppStarted()) {
+                if (!forceResume && !restartResume && audioResumeStatus == ResumeStatus.ASK && start > 0 && isAppStarted()) {
                     val confirmation = WaitConfirmation(mw.title, index, flags)
                     waitForConfirmationAudio.postValue(confirmation)
                     return
@@ -646,10 +682,6 @@ class PlaylistManager(val service: PlaybackService) : MediaWrapperList.EventList
                 media.addOption(":mp4-force-unmarked-aac4-ambisonics")
                 Log.w("Unity", "==== [XR_AUDIO] Enabled unmarked AAC4 Ambisonics fallback for panoramic media: ${mw.uri} ====")
             }
-            if (PlaybackServiceBridge.shouldMixAudioToMono()) {
-                media.addOption(":audio-filter=mono")
-                Log.w("Unity", "==== [XR_AUDIO] Enabled mono downmix audio filter for media: ${mw.uri} ====")
-            }
             VLCOptions.setMediaOptions(media, ctx, flags or mw.flags, PlaybackService.hasRenderer())
             /* keeping only video during benchmark */
             if (isBenchmark) {
@@ -662,8 +694,12 @@ class PlaylistManager(val service: PlaybackService) : MediaWrapperList.EventList
             }
             media.setEventListener(this@PlaylistManager)
             Log.e("XR_CONTROL", "PlaylistManager.playIndex route=startPlayback uri=${mw.uri} resolvedUri=$uri startMs=$start flags=${mw.flags} hasPaused=${mw.hasFlag(MediaWrapper.MEDIA_PAUSED)} forceRestart=$forceRestart ${describeControlState()}")
-            player.startPlayback(media, mediaplayerEventListener, start)
-            player.setSlaves(media, mw)
+            try {
+                player.prepareSlaves(media, mw)
+                player.startPlayback(media, mediaplayerEventListener, start)
+            } finally {
+                media.release()
+            }
             if (browserAudioActive) player.setVolume(0)
             newMedia = true
             determinePrevAndNextIndices()
@@ -884,10 +920,7 @@ class PlaylistManager(val service: PlaybackService) : MediaWrapperList.EventList
 
     fun setSpuTrack(index: String) {
         if (!player.setSpuTrack(index)) return
-        defaultSubtitleTrackSelectionJob?.cancel()
-        defaultSubtitleTrackSelectionJob = null
         defaultSubtitleTrackApplied = true
-        automaticallySelectedSubtitleTrack = null
         val media = getCurrentMedia() ?: return
         if (media.id != 0L) launch(Dispatchers.IO) { media.setStringMeta(MediaWrapper.META_SUBTITLE_TRACK, index) }
     }
@@ -928,26 +961,8 @@ class PlaylistManager(val service: PlaybackService) : MediaWrapperList.EventList
     }
 
     private fun applySubtitleTrackSelection(media: MediaWrapper) {
-        if (applySavedSubtitleTrackIfNeeded(media)) {
-            defaultSubtitleTrackSelectionJob?.cancel()
-            defaultSubtitleTrackSelectionJob = null
-            return
-        }
-        scheduleDefaultSubtitleTrackSelection(media)
-    }
-
-    private fun scheduleDefaultSubtitleTrackSelection(media: MediaWrapper) {
-        if (resolveSavedSubtitleTrack(media) != null) return
-        if (defaultSubtitleTrackApplied && automaticallySelectedSubtitleTrack == null) return
-        if (defaultSubtitleTrackApplied && player.getSpuTrack() != automaticallySelectedSubtitleTrack) return
-
-        defaultSubtitleTrackSelectionJob?.cancel()
-        defaultSubtitleTrackSelectionJob = launch {
-            delay(DEFAULT_SUBTITLE_TRACK_SETTLE_DELAY_MS)
-            if (resolveSavedSubtitleTrack(media) == null)
-                applyDefaultSubtitleTrackIfNeeded(media)
-            defaultSubtitleTrackSelectionJob = null
-        }
+        if (applySavedSubtitleTrackIfNeeded(media)) return
+        applyDefaultSubtitleTrackIfNeeded(media)
     }
 
     private fun applySavedSubtitleTrackIfNeeded(media: MediaWrapper): Boolean {
@@ -956,7 +971,6 @@ class PlaylistManager(val service: PlaybackService) : MediaWrapperList.EventList
 
         if (player.setSpuTrack(savedTrack)) {
             defaultSubtitleTrackApplied = true
-            automaticallySelectedSubtitleTrack = null
             Log.e(TAG, "Saved subtitle track restored by VLC path: $savedTrack")
         } else {
             Log.e(TAG, "Saved subtitle track not available yet; will retry on ESAdded: $savedTrack")
@@ -978,46 +992,23 @@ class PlaylistManager(val service: PlaybackService) : MediaWrapperList.EventList
     }
 
     private fun applyDefaultSubtitleTrackIfNeeded(media: MediaWrapper) {
-        if (resolveSavedSubtitleTrack(media) != null) return
-        if (defaultSubtitleTrackApplied) {
-            val previousDefaultTrack = automaticallySelectedSubtitleTrack ?: return
-            if (player.getSpuTrack() != previousDefaultTrack) return
-        }
+        if (defaultSubtitleTrackApplied || resolveSavedSubtitleTrack(media) != null) return
 
-        val defaultTrack = resolveDefaultSubtitleTrack(media)
+        val defaultTrack = resolveDefaultSubtitleTrack()
         if (defaultTrack == "0") return
 
         if (player.setSpuTrack(defaultTrack)) {
             defaultSubtitleTrackApplied = true
-            automaticallySelectedSubtitleTrack = defaultTrack
             Log.e(TAG, "Default subtitle track selected by VLC path: $defaultTrack")
         }
     }
 
-    private fun resolveDefaultSubtitleTrack(media: MediaWrapper): String {
-        val currentMediaSlaves = getCurrentMedia()?.slaves
-            ?.filter { it.type == IMedia.Slave.Type.Subtitle }
-            ?: emptyList()
-        val subtitleSlaves = currentMediaSlaves.ifEmpty {
-            media.slaves?.filter { it.type == IMedia.Slave.Type.Subtitle } ?: emptyList()
-        }
-        var subtitleSlaveIndex = 0
-        val orderedTracks = player.getSpuTracks()?.map { track ->
-            val trackId = track.getId()
-            val displayName = if (trackId != "-1") {
-                val slaveName = subtitleSlaves.getOrNull(subtitleSlaveIndex)?.uri
-                subtitleSlaveIndex += 1
-                slaveName ?: track.getName()
-            } else {
-                track.getName()
-            }
-            SubtitleTrackOrderEntry(trackId, displayName)
-        } ?: emptyList()
-        val defaultTrack = SubtitleTrackOrdering.firstSelectableTrackId(
-            orderedTracks
-        )
+    private fun resolveDefaultSubtitleTrack(): String {
+        val defaultTrack = player.getSpuTracks()
+            ?.firstOrNull { it.getId() != "-1" }
+            ?.getId()
         if (defaultTrack != null)
-            Log.e(TAG, "Default subtitle selected from alphabetical AAR order: $defaultTrack")
+            Log.e(TAG, "Default subtitle selected from preordered VLC track list: $defaultTrack")
         return defaultTrack ?: "0"
     }
 
@@ -1264,8 +1255,21 @@ class PlaylistManager(val service: PlaybackService) : MediaWrapperList.EventList
 
     private fun getStartTime(mw: MediaWrapper) : Long {
         val hadFromStart = mw.hasFlag(MediaWrapper.MEDIA_FROM_START)
+        val restartPlayback = pendingRestartPlayback
+            ?.takeIf { it.mediaUri == mw.uri.toString() }
         Log.e(TAG, "==== [XR_FROM_START] getStartTime enter uri=${mw.uri} time=${mw.time} savedTime=$savedTime hasFromStart=$hadFromStart flags=${mw.flags} endReachedFor=$endReachedFor ====")
         val start = when {
+            restartPlayback != null -> {
+                pendingRestartPlayback = null
+                mw.removeFlags(MediaWrapper.MEDIA_FROM_START)
+                if (endReachedFor == mw.uri.toString()) endReachedFor = null
+                Log.e(
+                    TAG,
+                    "==== [XR_FROM_START] getStartTime using restart time uri=${mw.uri} " +
+                        "start=${restartPlayback.resumeTimeMs} ===="
+                )
+                restartPlayback.resumeTimeMs
+            }
             hadFromStart -> {
                 mw.removeFlags(MediaWrapper.MEDIA_FROM_START)
                 if (endReachedFor == mw.uri.toString()) endReachedFor = null
@@ -1290,6 +1294,19 @@ class PlaylistManager(val service: PlaybackService) : MediaWrapperList.EventList
         savedTime = 0L
         Log.e(TAG, "==== [XR_FROM_START] getStartTime exit uri=${mw.uri} start=$start savedTimeAfter=$savedTime hasFromStartAfter=${mw.hasFlag(MediaWrapper.MEDIA_FROM_START)} ====")
         return start
+    }
+
+    private fun isPendingRestartResume(mw: MediaWrapper): Boolean {
+        val pending = pendingRestartPlayback ?: return false
+        if (pending.mediaUri != mw.uri.toString()) {
+            Log.e(
+                "XR_CONTROL",
+                "PlaylistManager.restart discard stale restore expectedUri=${pending.mediaUri} actualUri=${mw.uri}"
+            )
+            pendingRestartPlayback = null
+            return false
+        }
+        return true
     }
 
     @Synchronized
