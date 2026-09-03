@@ -61,6 +61,7 @@ internal class XrSurfaceMapper(
     private var aTexCoordLocation = -1
     private var uTextureLocation = -1
     private var uTexMatrixLocation = -1
+    private var uRotationRadiansLocation = -1
     private var uStereoLocation = -1
     private var uInputSizeLocation = -1
     private var uFisheyeMappingEnabledLocation = -1
@@ -72,6 +73,8 @@ internal class XrSurfaceMapper(
     private var uChromaKeyDespillStrengthLocation = -1
 
     private var stereoMode = STEREO_MONO
+    @Volatile
+    private var rotationDegrees = 0
     private var fisheyeMappingEnabled = false
     private var chromaKeyEnabled = false
     @Volatile
@@ -136,6 +139,15 @@ internal class XrSurfaceMapper(
         chromaKeyRange = colorRange.coerceIn(0f, 0.25f)
         chromaKeyEdgeSmooth = edgeSmooth.coerceIn(0f, 0.25f)
         chromaKeyDespillStrength = despillStrength.coerceIn(0f, 0.1f)
+    }
+
+    fun updateRotation(degrees: Int) {
+        if (released) return
+        rotationDegrees = normalizeQuarterTurnDegrees(degrees)
+        renderHandler.post {
+            if (!released && renderedFrameCount > 0L)
+                drawFrame()
+        }
     }
 
     fun requestDominantColor(callback: (Int?) -> Unit) {
@@ -324,6 +336,7 @@ internal class XrSurfaceMapper(
         aTexCoordLocation = GLES20.glGetAttribLocation(programId, "aTexCoord")
         uTextureLocation = GLES20.glGetUniformLocation(programId, "uTexture")
         uTexMatrixLocation = GLES20.glGetUniformLocation(programId, "uTexMatrix")
+        uRotationRadiansLocation = GLES20.glGetUniformLocation(programId, "uRotationRadians")
         uStereoLocation = GLES20.glGetUniformLocation(programId, "uStereo")
         uInputSizeLocation = GLES20.glGetUniformLocation(programId, "uInputSize")
         uFisheyeMappingEnabledLocation = GLES20.glGetUniformLocation(programId, "uFisheyeMappingEnabled")
@@ -363,6 +376,7 @@ internal class XrSurfaceMapper(
             GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, oesTextureId)
             GLES20.glUniform1i(uTextureLocation, 0)
             GLES20.glUniformMatrix4fv(uTexMatrixLocation, 1, false, textureMatrix, 0)
+            GLES20.glUniform1f(uRotationRadiansLocation, Math.toRadians(rotationDegrees.toDouble()).toFloat())
             GLES20.glUniform1i(uStereoLocation, stereoMode)
             GLES20.glUniform2f(uInputSizeLocation, inputWidth.toFloat(), inputHeight.toFloat())
             GLES20.glUniform1i(uFisheyeMappingEnabledLocation, if (fisheyeMappingEnabled) 1 else 0)
@@ -616,6 +630,18 @@ internal class XrSurfaceMapper(
         private const val MIN_VALID_COLOR_SAMPLES = 32
         private const val MIN_CHROMA_SQUARED = 0.0036f
 
+        private fun normalizeQuarterTurnDegrees(degrees: Int): Int {
+            var normalized = degrees % 360
+            if (normalized > 180) normalized -= 360
+            if (normalized < -180) normalized += 360
+            val steps = if (normalized >= 0) {
+                (normalized + 45) / 90
+            } else {
+                (normalized - 45) / 90
+            }
+            return steps * 90
+        }
+
         private val FULLSCREEN_VERTICES = floatArrayOf(
             -1f, -1f, 0f, 1f,
             1f, -1f, 1f, 1f,
@@ -646,6 +672,7 @@ internal class XrSurfaceMapper(
 
             uniform samplerExternalOES uTexture;
             uniform XR_FISHEYE_PRECISION mat4 uTexMatrix;
+            uniform XR_FISHEYE_PRECISION float uRotationRadians;
             uniform int uStereo;
             uniform XR_FISHEYE_PRECISION vec2 uInputSize;
             uniform int uFisheyeMappingEnabled;
@@ -699,6 +726,20 @@ internal class XrSurfaceMapper(
                 return theta / thetaMax;
             }
 
+            vec2 rotateUnitUv(vec2 uv) {
+                vec2 centered = uv - vec2(0.5);
+                float cosine = cos(uRotationRadians);
+                float sine = sin(uRotationRadians);
+                return vec2(
+                    cosine * centered.x + sine * centered.y,
+                    -sine * centered.x + cosine * centered.y
+                ) + vec2(0.5);
+            }
+
+            bool outsideUnitUv(vec2 uv) {
+                return uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0;
+            }
+
             void main() {
                 vec2 uv = clamp(vUv, 0.0, 1.0);
                 vec2 sampledUv = uv;
@@ -721,6 +762,12 @@ internal class XrSurfaceMapper(
                         eyeHeight = max(uInputSize.y * 0.5, 1.0);
                     }
 
+                    localUv = rotateUnitUv(localUv);
+                    if (outsideUnitUv(localUv)) {
+                        gl_FragColor = vec4(0.0);
+                        return;
+                    }
+
                     float yaw = (localUv.x - 0.5) * PI;
                     float pitch = (localUv.y - 0.5) * PI;
                     vec3 dir = normalize(vec3(sin(yaw) * cos(pitch), sin(pitch), cos(yaw) * cos(pitch)));
@@ -738,6 +785,28 @@ internal class XrSurfaceMapper(
                         radiusPx / max(uInputSize.y, 1.0)
                     );
                     sampledUv = eyeCenter + radial * rho * eyeRadiusUv;
+                } else if (uStereo == 1) {
+                    float eye = uv.x >= 0.5 ? 1.0 : 0.0;
+                    vec2 localUv = rotateUnitUv(vec2(uv.x * 2.0 - eye, uv.y));
+                    if (outsideUnitUv(localUv)) {
+                        gl_FragColor = vec4(0.0);
+                        return;
+                    }
+                    sampledUv = vec2((localUv.x + eye) * 0.5, localUv.y);
+                } else if (uStereo == 2) {
+                    float eye = uv.y >= 0.5 ? 1.0 : 0.0;
+                    vec2 localUv = rotateUnitUv(vec2(uv.x, uv.y * 2.0 - eye));
+                    if (outsideUnitUv(localUv)) {
+                        gl_FragColor = vec4(0.0);
+                        return;
+                    }
+                    sampledUv = vec2(localUv.x, (localUv.y + eye) * 0.5);
+                } else {
+                    sampledUv = rotateUnitUv(uv);
+                    if (outsideUnitUv(sampledUv)) {
+                        gl_FragColor = vec4(0.0);
+                        return;
+                    }
                 }
 
                 vec2 inputUv = vec2(sampledUv.x, 1.0 - sampledUv.y);
