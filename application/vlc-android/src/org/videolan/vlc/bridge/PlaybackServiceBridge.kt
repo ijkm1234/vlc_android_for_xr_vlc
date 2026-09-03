@@ -150,6 +150,9 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
     private var videoSurfaceMappingContentHeight = 0
 
     @Volatile
+    private var videoSurfaceRotationDegrees = 0
+
+    @Volatile
     private var videoSurfaceFisheyeProjectionFormula = 0
 
     @Volatile
@@ -1304,6 +1307,21 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
     }
 
     @JvmStatic
+    fun setVideoSurfaceRotation(degrees: Int) {
+        var normalized = degrees % 360
+        if (normalized > 180) normalized -= 360
+        if (normalized < -180) normalized += 360
+        val steps = if (normalized >= 0) {
+            (normalized + 45) / 90
+        } else {
+            (normalized - 45) / 90
+        }
+        videoSurfaceRotationDegrees = steps * 90
+        surfaceMapper?.updateRotation(videoSurfaceRotationDegrees)
+        surfaceDebug("set_video_surface_rotation degrees=$videoSurfaceRotationDegrees mapper=${surfaceMapper != null}")
+    }
+
+    @JvmStatic
     fun setVideoSurfaceProcessingParameters(
         fisheyeProjectionFormula: Int,
         keyRed: Float,
@@ -1689,6 +1707,7 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
             videoSurfaceChromaKeyEdgeSmooth,
             videoSurfaceChromaKeyDespillStrength
         )
+        mapper.updateRotation(videoSurfaceRotationDegrees)
         val inputSurface = checkNotNull(mapper.inputSurface) { "Mapper input surface was not created" }
         check(inputSurface.isValid) { "Mapper input surface is invalid" }
         surfaceDebug(
@@ -1696,6 +1715,7 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
                 "${describeSurface("input", inputSurface)} fisheye=$videoSurfaceFisheyeMappingEnabled " +
                 "chromaKey=$videoSurfaceChromaKeyEnabled stereo=$videoSurfaceMappingStereo " +
                 "content=${videoSurfaceMappingContentWidth}x$videoSurfaceMappingContentHeight " +
+                "rotation=$videoSurfaceRotationDegrees " +
                 "formula=$videoSurfaceFisheyeProjectionFormula " +
                 "key=($videoSurfaceChromaKeyRed,$videoSurfaceChromaKeyGreen,$videoSurfaceChromaKeyBlue) " +
                 "range=$videoSurfaceChromaKeyRange edgeSmooth=$videoSurfaceChromaKeyEdgeSmooth " +
