@@ -53,8 +53,9 @@ class LibrariesActivity : BaseActivity() {
         title = getString(R.string.xr_third_party_libraries)
 
         binding.licenses.layoutManager = LinearLayoutManager(this)
+        val hideLicenseLinks = resources.getBoolean(R.bool.xr_region_cn)
         adapter = LibrariesAdapter {
-            LicenseDialog.newInstance(it).show(supportFragmentManager, "LicenseDialog")
+            LicenseDialog.newInstance(it, hideLicenseLinks).show(supportFragmentManager, "LicenseDialog")
         }
         binding.licenses.adapter = adapter
 

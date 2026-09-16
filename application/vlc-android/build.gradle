@@ -149,8 +149,16 @@ def generateTranslation() {
     fileTree("../resources/src/main/res").visit { FileVisitDetails details ->
         // println 'details: ' + details
         if (details.file.path.endsWith("strings.xml")) {
-            def languageCode = details.file.parentFile.name.replaceAll('values-', '').replaceAll('-r', '-')
-            languageCode = (languageCode == "values") ? "en" : languageCode
+            def resourceDirectory = details.file.parentFile.name
+            def languageCode
+            if (resourceDirectory == "values") {
+                languageCode = "en"
+            } else {
+                def resourceQualifier = resourceDirectory.replaceFirst('^values-', '')
+                languageCode = resourceQualifier.startsWith('b+')
+                        ? resourceQualifier.substring(2).replace('+', '-')
+                        : resourceQualifier.replaceAll('-r', '-')
+            }
             // println 'adding ' + languageCode + ' strings'
             emptyList.add(languageCode)
         }

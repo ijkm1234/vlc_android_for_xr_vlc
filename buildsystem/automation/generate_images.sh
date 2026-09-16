@@ -119,7 +119,7 @@ get_font() {
         'bn-BD') echo "NotoSansBengali";;
         'ka-GE') echo "NotoSansGeorgian";;
         'he-IL') echo "NotoSansHebrew";;
-        'zh-TW') echo "NotoSansSC";;
+        'zh-Hant') echo "NotoSansSC";;
         'zh-CN') echo "NotoSansSC";;
         'fa') echo "NotoAR";;
         'ar') echo "NotoAR";;

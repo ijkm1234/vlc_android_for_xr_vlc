@@ -57,7 +57,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.math.roundToInt
 
-object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLCVout.OnNewVideoLayoutListener {
+object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback {
     private const val TAG = "PlaybackServiceBridge"
     private const val SURFACE_DEBUG_TAG = "XR_SURFACE_DEBUG"
     private const val SUBTITLE_RENDER_NATIVE = 0
@@ -88,7 +88,14 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
         val width: Int,
         val height: Int,
         val visibleWidth: Int,
-        val visibleHeight: Int
+        val visibleHeight: Int,
+        val sarNum: Int,
+        val sarDen: Int
+    )
+
+    private data class VideoLayoutCallbackContext(
+        val mediaRequestId: Long,
+        val surfaceToken: Long
     )
 
     private enum class VideoLayerOperation {
@@ -194,6 +201,10 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private var activeVideoOutputSwitch: VideoOutputSwitch? = null
+    @Volatile
+    private var committedMediaRequestId = 0L
+    @Volatile
+    private var committedVideoInputToken = 0L
     private val queuedVideoOutputSwitches = ArrayDeque<VideoOutputSwitch>()
     private var nextMediaRequestId = 0L
     private val pendingMediaRequests = ArrayDeque<PendingMediaRequest>()
@@ -575,6 +586,8 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
                     var height = 0
                     var visibleWidth = 0
                     var visibleHeight = 0
+                    var sarNum = 1
+                    var sarDen = 1
                     var hasParsedSize = false
                     // projection: 0=Rectangular(flat), 1=EquiRectangular(360), 2=Cubemap
                     var projectionInt = 0
@@ -588,6 +601,8 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
                                 height = track.height
                                 visibleWidth = track.width
                                 visibleHeight = track.height
+                                sarNum = track.sarNum.takeIf { it > 0 } ?: 1
+                                sarDen = track.sarDen.takeIf { it > 0 } ?: 1
                                 projectionInt = track.projection
                                 hasParsedSize = true
                                 break
@@ -621,8 +636,17 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
                             override fun onNewVideoLayout(vout: IVLCVout?, w: Int, h: Int, vw: Int, vh: Int, sarNum: Int, sarDen: Int) {
                                 if (w > 0 && h > 0 && !sizeDeferred.isCompleted) {
                                     android.util.Log.e(TAG, "Dummy decoder extracted real size: ${w}x${h}, visible=${vw}x${vh}")
-                                    surfaceDebug("preload_parse dummy_layout raw=${w}x${h} visible=${vw}x${vh}")
-                                    sizeDeferred.complete(VideoLayoutSize(w, h, vw, vh))
+                                    surfaceDebug("preload_parse dummy_layout raw=${w}x${h} visible=${vw}x${vh} sar=${sarNum}/${sarDen}")
+                                    sizeDeferred.complete(
+                                        VideoLayoutSize(
+                                            w,
+                                            h,
+                                            vw,
+                                            vh,
+                                            sarNum.takeIf { it > 0 } ?: 1,
+                                            sarDen.takeIf { it > 0 } ?: 1
+                                        )
+                                    )
                                 }
                             }
                         }
@@ -650,6 +674,8 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
                             height = realSize.height
                             visibleWidth = realSize.visibleWidth
                             visibleHeight = realSize.visibleHeight
+                            sarNum = realSize.sarNum
+                            sarDen = realSize.sarDen
                             hasParsedSize = true
                             android.util.Log.e(TAG, "Successfully extracted size via dummy surface: ${width}x${height}, visible=${visibleWidth}x${visibleHeight}")
                             surfaceDebug("preload_parse dummy_success raw=${width}x${height} visible=${visibleWidth}x${visibleHeight}")
@@ -673,10 +699,10 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
                         1 -> "360"   // IMedia.VideoTrack.Projection.EquiRectangular
                         else -> "flat"
                     }
-                    val parseResultJson = """{"uri":${org.json.JSONObject.quote(uri.toString())},"width":$width,"height":$height,"visibleWidth":$visibleWidth,"visibleHeight":$visibleHeight,"projection":"$projectionStr","duration":$duration,"mediaRequestId":$mediaRequestId}"""
+                    val parseResultJson = """{"uri":${org.json.JSONObject.quote(uri.toString())},"width":$width,"height":$height,"visibleWidth":$visibleWidth,"visibleHeight":$visibleHeight,"sarNum":$sarNum,"sarDen":$sarDen,"projection":"$projectionStr","duration":$duration,"mediaRequestId":$mediaRequestId}"""
                     surfaceDebug(
                         "preload_parse result uri=$uri raw=${width}x${height} visible=${visibleWidth}x${visibleHeight} " +
-                            "projection=$projectionStr duration=$duration hasParsedSize=$hasParsedSize"
+                            "sar=${sarNum}/${sarDen} projection=$projectionStr duration=$duration hasParsedSize=$hasParsedSize"
                     )
 
                     kotlinx.coroutines.withContext(Dispatchers.Main) {
@@ -1163,6 +1189,10 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
                 "mediaRequest=${active.mediaRequestId} phase=${active.phase} " +
                 "${describeSurface("input", boundVideoInputSurface)} ${describeSurface("output", videoSurface)}"
         )
+        if (active.mediaRequestId > 0L)
+            committedMediaRequestId = active.mediaRequestId
+        if (active.rebuildInput)
+            committedVideoInputToken = active.token
         activeVideoOutputSwitch = null
         if (active.rebuildOutput && !active.rebuildInput)
             updateSubtitleSurfaceSafely("${active.operation.name.lowercase()}-complete-${active.token}")
@@ -1263,6 +1293,8 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
         )
         videoSurface = surface
         if (surface == null) {
+            committedMediaRequestId = 0L
+            committedVideoInputToken = 0L
             subtitleSurface = null
             videoSurfaceFisheyeMappingEnabled = false
             videoSurfaceChromaKeyEnabled = false
@@ -1657,7 +1689,43 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
             }
 
             surfaceDebug("configure_vout before_attach_views")
-            vout.attachViews(this)
+            val activeSwitch = activeVideoOutputSwitch
+            val layoutContext = VideoLayoutCallbackContext(
+                mediaRequestId = activeSwitch?.mediaRequestId?.takeIf { it > 0L }
+                    ?: committedMediaRequestId,
+                surfaceToken = if (activeSwitch?.rebuildInput == true) {
+                    activeSwitch.token
+                } else {
+                    committedVideoInputToken
+                }
+            )
+            val layoutListener = object : IVLCVout.OnNewVideoLayoutListener {
+                override fun onNewVideoLayout(
+                    vout: IVLCVout?,
+                    width: Int,
+                    height: Int,
+                    visibleWidth: Int,
+                    visibleHeight: Int,
+                    sarNum: Int,
+                    sarDen: Int
+                ) {
+                    handleNewVideoLayout(
+                        layoutContext,
+                        vout,
+                        width,
+                        height,
+                        visibleWidth,
+                        visibleHeight,
+                        sarNum,
+                        sarDen
+                    )
+                }
+            }
+            surfaceDebug(
+                "configure_vout layout_context reason=$reason mediaRequest=${layoutContext.mediaRequestId} " +
+                    "surfaceToken=${layoutContext.surfaceToken}"
+            )
+            vout.attachViews(layoutListener)
             android.util.Log.e(TAG, "Surfaces attached to VLCVout video=$videoSurfaceForVlc output=$currentVideoSurface subtitle=$currentSubtitleSurface")
             surfaceDebug("configure_vout after_attach attached=${vout.areViewsAttached()}")
 
@@ -1900,6 +1968,8 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
     @JvmStatic
     fun stop() {
         android.util.Log.e(TAG, "stop called")
+        committedMediaRequestId = 0L
+        committedVideoInputToken = 0L
         CoroutineScope(Dispatchers.Main).launch {
             val service = playbackService
             service?.stop()
@@ -2298,15 +2368,29 @@ object PlaybackServiceBridge : PlaybackService.Callback, IVLCVout.Callback, IVLC
         surfaceDebug("on_surfaces_destroyed voutNull=${vout == null} attached=${vout?.areViewsAttached()}")
     }
 
-    // --- IVLCVout.OnNewVideoLayoutListener ---
-    override fun onNewVideoLayout(vout: IVLCVout?, width: Int, height: Int, visibleWidth: Int, visibleHeight: Int, sarNum: Int, sarDen: Int) {
+    private fun handleNewVideoLayout(
+        context: VideoLayoutCallbackContext,
+        vout: IVLCVout?,
+        width: Int,
+        height: Int,
+        visibleWidth: Int,
+        visibleHeight: Int,
+        sarNum: Int,
+        sarDen: Int
+    ) {
         android.util.Log.e(TAG, "onNewVideoLayout: ${width}x${height}, visible=${visibleWidth}x${visibleHeight}")
         surfaceDebug(
             "layout_from_vlc raw=${width}x${height} visible=${visibleWidth}x${visibleHeight} " +
                 "sar=${sarNum}/${sarDen} attached=${vout?.areViewsAttached()} " +
-                "sendUri=false"
+                "mediaRequest=${context.mediaRequestId} surfaceToken=${context.surfaceToken}"
         )
-        sendToUnity(UnityBridgeContract.Method.ON_VIDEO_SIZE_CHANGED, "$width|$height|$visibleWidth|$visibleHeight")
+        val safeSarNum = sarNum.takeIf { it > 0 } ?: 1
+        val safeSarDen = sarDen.takeIf { it > 0 } ?: 1
+        sendToUnity(
+            UnityBridgeContract.Method.ON_VIDEO_SIZE_CHANGED,
+            "${context.mediaRequestId}|${context.surfaceToken}|$width|$height|" +
+                "$visibleWidth|$visibleHeight|$safeSarNum|$safeSarDen"
+        )
     }
 
     // --- PlaybackService.Callback ---

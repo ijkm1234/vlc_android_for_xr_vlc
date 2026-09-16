@@ -481,9 +481,7 @@ object UiTools {
                 activity.openLinkIfPossible(activity.getString(urlId))
             }
         }
-        v.findViewById<View>(R.id.about_sources_container).setOnClickListener {
-            activity.openLinkIfPossible(activity.getString(R.string.xr_vlc_source_code_url))
-        }
+        v.findViewById<View>(R.id.about_sources_container).setGone()
         v.findViewById<View>(R.id.about_libraries_container).setOnClickListener {
             activity.startActivity(Intent(activity, LibrariesActivity::class.java))
         }
