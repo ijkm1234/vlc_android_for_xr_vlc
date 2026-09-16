@@ -40,7 +40,10 @@ object LocaleUtils {
 
             val displayLanguage = locale.getDisplayLanguage(locale)
             val displayCountry = locale.getDisplayCountry(locale)
-            if (displayCountry.isEmpty()) {
+            val displayScript = locale.getDisplayScript(locale)
+            if (displayCountry.isEmpty() && displayScript.isNotEmpty()) {
+                localesEntry[i] = locale.getDisplayName(locale).firstLetterUppercase()
+            } else if (displayCountry.isEmpty()) {
                 localesEntry[i] = displayLanguage.firstLetterUppercase()
             } else {
                 localesEntry[i] =

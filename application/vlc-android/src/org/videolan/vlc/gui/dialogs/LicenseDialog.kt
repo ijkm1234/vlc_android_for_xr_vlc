@@ -33,6 +33,7 @@ import org.videolan.vlc.gui.LibraryWithLicense
 import org.videolan.vlc.util.openLinkIfPossible
 
 const val LICENSE_ITEM = "LICENSE_ITEM"
+private const val HIDE_LICENSE_LINK = "HIDE_LICENSE_LINK"
 
 /**
  * Dialog showing a license text
@@ -41,12 +42,16 @@ class LicenseDialog : VLCBottomSheetDialogFragment() {
 
     private lateinit var licenseItem: LibraryWithLicense
     private lateinit var binding: DialogLicenseBinding
+    private var hideLicenseLink = false
 
     companion object {
 
-        fun newInstance(libraryWithLicense: LibraryWithLicense): LicenseDialog {
+        fun newInstance(libraryWithLicense: LibraryWithLicense, hideLicenseLink: Boolean = false): LicenseDialog {
             return LicenseDialog().apply {
-                arguments = bundleOf(LICENSE_ITEM to libraryWithLicense)
+                arguments = bundleOf(
+                    LICENSE_ITEM to libraryWithLicense,
+                    HIDE_LICENSE_LINK to hideLicenseLink
+                )
             }
         }
     }
@@ -63,19 +68,22 @@ class LicenseDialog : VLCBottomSheetDialogFragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         licenseItem = arguments?.parcelable(LICENSE_ITEM) ?: return
+        hideLicenseLink = arguments?.getBoolean(HIDE_LICENSE_LINK) == true
         super.onCreate(savedInstanceState)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         binding = DialogLicenseBinding.inflate(layoutInflater, container, false)
         binding.library = licenseItem
-        binding.licenseButton.setOnClickListener {
-            if (licenseItem.licenseLink.isNotEmpty()) requireActivity().openLinkIfPossible(licenseItem.licenseLink)
+        binding.hideLicenseLink = hideLicenseLink
+        if (!hideLicenseLink) {
+            binding.licenseButton.setOnClickListener {
+                if (licenseItem.licenseLink.isNotEmpty()) requireActivity().openLinkIfPossible(licenseItem.licenseLink)
+            }
         }
         return binding.root
     }
 }
-
 
 
 

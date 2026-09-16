@@ -13,6 +13,7 @@
     <string name="xr_repository_libvlcjni_url" translatable="false">https://github.com/ijkm1234/libvlcjni_for_xr_vlc</string>
     <string name="xr_repository_vlc_url" translatable="false">https://github.com/ijkm1234/vlc_for_xr_vlc</string>
     <string name="xr_vlc_source_code_url" translatable="false">https://code.videolan.org/videolan/vlc-android</string>
+    <bool name="xr_region_cn">false</bool>
     <string name="xr_vlc_license">VLC license</string>
     <string name="xr_third_party_libraries">Third-party libraries</string>
     <string name="xr_about_license_statement">Copyright © 2026 ijkm1234. Original XRVLC for PICO source modifications are released under GNU GPL v2 or later. VLC for Android, VLC, libVLC, and other bundled components retain their respective copyright notices and license terms.</string>
